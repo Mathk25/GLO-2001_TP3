@@ -83,6 +83,69 @@ void printiNode(iNodeEntry iNode) {
 /* ----------------------------------------------------------------------------------------
 					            à vous de jouer, maintenant!
    ---------------------------------------------------------------------------------------- */
+// Fonction pour trouver le numéro d'inode d'un fichier particulier
+int getFileInodeNumber(const char *filename, int parentInodeNumber){
+    // Vérifie si on passe '/' (pour les fonctions suivantes) comme nom de fichier ou un nom de fichier vide
+    if (strcmp(filename, "") == 0) {
+        return parentInodeNumber;
+    }
+    
+    // On va chercher le numéro de bloc associé à l'inode, puis l'offset dans le bloc
+    char data[BLOCK_SIZE];
+    int iNodeBlockNum = BASE_BLOCK_INODE + parentInodeNumber/NUM_INODE_PER_BLOCK;
+    int iNodeOffset = parentInodeNumber % NUM_INODE_PER_BLOCK;
+    
+    // On charge le bloc qui contient l'inode dans data
+    int retRead = ReadBlock(iNodeBlockNum, data);
+    
+    // Vérification de la fonctio readBlock
+    if (retRead == 0 || retRead == -1){
+        return -1;
+    }
+    iNodeEntry *inodes = (iNodeEntry*) data;
+    
+    // Avant de changer le contenu de data, on vérifie combien de fichiers sont associés à l'inode
+    int qtDir = NumberofDirEntry(inodes[iNodeOffset].iNodeStat.st_size);
+    
+    // On charge le contenu du bloc pointé par l'inode dans data
+    retRead = ReadBlock(inodes[iNodeOffset].Block[0], data);
+    
+    // Vérification de la fonctio readBlock
+    if (retRead == 0 || retRead == -1){
+        return -1;
+    }
+    
+    DirEntry *entries = (DirEntry*) data;
+
+    //On itère sur les fichiers contenu dans le directory (bloc) et on vérifie si on trouve une correspondance avec le filename
+    for (int i = 0; i < qtDir; i++){
+        if (strcmp(entries[i].Filename, filename) == 0){
+            return entries[i].iNode;
+        }
+    }
+    
+    // On n'a pas trouvé le fichier
+    return -1;
+}
+
+int getInodeFromPath(const char *path){
+    
+    int lastInode = ROOT_INODE;
+    char* files;
+    char pathCopy[100];
+    strcpy(pathCopy, path);
+    files = strtok (pathCopy,"/");
+    
+    while (files != NULL)
+    {
+        lastInode = getFileInodeNumber(files, lastInode);
+        files = strtok (NULL, "/");
+        
+    }
+    
+    return lastInode;
+     
+}
 
 
 int bd_countfreeblocks(void) {
@@ -90,26 +153,27 @@ int bd_countfreeblocks(void) {
     char data[BLOCK_SIZE];
     int errReadBlock;
     
+    // On assigne une valeur de retour à la fonction ReadBLock
     errReadBlock = ReadBlock(2, data);
 
-    if(errReadBlock == 0){
-        return 0;
-    }else if(errReadBlock == -1){
-        return -1;
-        
-    }else {
+    if (errReadBlock == 0 || errReadBlock == -1){
+        return errReadBlock;
+    }
+    
+    // On itère sur les blocs dans la bitmap des blocs
     for (int i = 0; i < N_BLOCK_ON_DISK; i++){
-        if(data[i] !=0){
+        if (data[i] !=0){
             nbrFreeBlock++;
         }
     }
     return nbrFreeBlock;
-    }
 }
 
 int bd_stat(const char *pFilename, gstat *pStat) {
-	
-    return -1;
+    int inode = getInodeFromPath(pFilename);
+    
+    return 0;
+    
 }
 
 int bd_create(const char *pFilename) {

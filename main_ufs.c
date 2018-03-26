@@ -15,7 +15,7 @@
 #include "disque.h"
 
 int main(int argc, char **argv) {
-	int index;
+    int index;
 	int RetVal = -99;
 	//printf("sizeof(iNodeEntry)=%d, # inode par block = %d\n",sizeof(iNodeEntry),NUM_INODE_PER_BLOCK);
 	if ((argc < 2) || (argc > 5)) {
