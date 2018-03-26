@@ -83,8 +83,37 @@ void printiNode(iNodeEntry iNode) {
 /* ----------------------------------------------------------------------------------------
 					            à vous de jouer, maintenant!
    ---------------------------------------------------------------------------------------- */
+
+
+// Copie un inode dans entry selon un numéro d'inode
+static int getInode(int inodeNumber, iNodeEntry **entry){
+    char data[BLOCK_SIZE];
+    
+    // Trouver l'offset dans les blocs pour un inode particulier
+    int iNodeBlockNum = BASE_BLOCK_INODE + inodeNumber/NUM_INODE_PER_BLOCK;
+    int iNodeOffset = inodeNumber % NUM_INODE_PER_BLOCK;
+    
+    // On charge le bloc qui contient l'inode dans data
+    int retRead = ReadBlock(iNodeBlockNum, data);
+    
+    // Vérification de la fonctio readBlock
+    if (retRead == 0 || retRead == -1){
+        return -1;
+    }
+    
+    // Copie les stats de l'inode
+    iNodeEntry *inode = (iNodeEntry*) data + iNodeOffset;
+    (*entry)->iNodeStat = inode->iNodeStat;
+    // Copie le block de l'inode
+    for (int i = 0; i < N_BLOCK_PER_INODE; ++i) {
+        (*entry)->Block[i] = inode->Block[i];
+    }
+    
+    return 0;
+}
+
 // Fonction pour trouver le numéro d'inode d'un fichier particulier
-int getFileInodeNumber(const char *filename, int parentInodeNumber){
+static int getFileInodeNumber(const char *filename, int parentInodeNumber){
     // Vérifie si on passe '/' (pour les fonctions suivantes) comme nom de fichier ou un nom de fichier vide
     if (strcmp(filename, "") == 0) {
         return parentInodeNumber;
@@ -128,14 +157,18 @@ int getFileInodeNumber(const char *filename, int parentInodeNumber){
     return -1;
 }
 
-int getInodeFromPath(const char *path){
-    
+// Retourne le numéro d'inode d'un fichier avec son path
+static int getInodeFromPath(const char *path){
+    // On assigne que le premier inode est le root
     int lastInode = ROOT_INODE;
+    
+    // On sépare la path pour chaque file selon les /
     char* files;
-    char pathCopy[100];
+    char pathCopy[strlen(path)];
     strcpy(pathCopy, path);
     files = strtok (pathCopy,"/");
     
+    // On itère sur chaque élément de la path, donc sur les files
     while (files != NULL)
     {
         lastInode = getFileInodeNumber(files, lastInode);
@@ -143,6 +176,7 @@ int getInodeFromPath(const char *path){
         
     }
     
+    // On retourne le dernier inode visité, soit au bout du path
     return lastInode;
      
 }
@@ -170,10 +204,20 @@ int bd_countfreeblocks(void) {
 }
 
 int bd_stat(const char *pFilename, gstat *pStat) {
-    int inode = getInodeFromPath(pFilename);
+    int inodeNum = getInodeFromPath(pFilename);
+    
+    if (inodeNum == -1) return -1;
+    
+    iNodeEntry* inode = alloca(sizeof(*inode));
+    getInode(inodeNum, &inode);
+    
+    pStat->st_blocks = inode->iNodeStat.st_blocks;
+    pStat->st_ino = inode->iNodeStat.st_ino;
+    pStat->st_mode = inode->iNodeStat.st_mode;
+    pStat->st_nlink = inode->iNodeStat.st_nlink;
+    pStat->st_size = inode->iNodeStat.st_size;
     
     return 0;
-    
 }
 
 int bd_create(const char *pFilename) {
