@@ -207,7 +207,7 @@ static int getInodeFromPath(const char *path){
     // On assigne que le premier inode est le root
     int lastInode = ROOT_INODE;
     
-    // On sépare la path pour chaque file selon les /
+    // On sépare la path pour chaque file selon les '/'
     char* files;
     char pathCopy[strlen(path)];
     strcpy(pathCopy, path);
