@@ -83,7 +83,50 @@ void printiNode(iNodeEntry iNode) {
 /* ----------------------------------------------------------------------------------------
 					            à vous de jouer, maintenant!
    ---------------------------------------------------------------------------------------- */
+static int getFirstFreeInode(){
+    char data[BLOCK_SIZE];
+    int errReadBlock;
+    
+    // On vérifie le retour de la fonction readBlock
+    errReadBlock = ReadBlock(FREE_INODE_BITMAP, data);
+    if (errReadBlock == 0 || errReadBlock == -1) return -1;
+    
+    // On itère sur le bitmap d'iNodes, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
+    for (int i = 0; i < N_INODE_ON_DISK; i++){
+        if (data[i] != 0){
+            printf("GLOFS : Saisi iNode %d", i);
+            data[i] = 0;
+            WriteBlock(FREE_INODE_BITMAP, data);
+            return i;
+        }
+    }
+    return -1;
+}
 
+static int addiNodeToiNodeBlock(iNodeEntry *iNode){
+    char data[BLOCK_SIZE];
+    
+    // Trouver l'offset dans les blocs pour un inode particulier
+    ino iNodeNumber = iNode->iNodeStat.st_ino;
+    int iNodeBlockNum = BASE_BLOCK_INODE + iNodeNumber/NUM_INODE_PER_BLOCK;
+    int iNodeOffset = iNodeNumber % NUM_INODE_PER_BLOCK;
+    
+    // On charge le bloc qui contient l'inode dans data
+    int retRead = ReadBlock(iNodeBlockNum, data);
+    
+    // Vérification de la fonctio readBlock
+    if (retRead == 0 || retRead == -1){
+        return -1;
+    }
+    
+    iNodeEntry *entries = (iNodeEntry*) data;
+    
+    // Écriture de l'inode sur le bloc, puis sauvegarde en mémoire
+    entries[iNodeOffset] = *iNode;
+    WriteBlock(iNodeBlockNum, data);
+    
+    return 0;
+}
 
 // Copie un inode dans entry selon un numéro d'inode
 static int getInode(int inodeNumber, iNodeEntry **entry){
@@ -222,7 +265,45 @@ int bd_stat(const char *pFilename, gstat *pStat) {
 }
 
 int bd_create(const char *pFilename) {
-	return -1;
+    char parentFilename[4096];
+    
+    GetDirFromPath(pFilename, parentFilename);
+    
+    // Aller chercher les numéros des inodes
+    int inodeNumPathParent = getInodeFromPath(parentFilename);
+    int inodeNumFilename = getInodeFromPath(pFilename);
+    
+    // On va chercher le inode du fichier parent de pFilename
+    iNodeEntry* inodePathParent = alloca(sizeof(*inodePathParent));
+    getInode(inodeNumPathParent, &inodePathParent);
+    
+    // Vérifier que le répertoire existe
+    if (inodeNumPathParent == -1) return -1;
+    
+    //Vérifier que le fichier n'existe pas déjà
+    if (inodeNumFilename != -1) return -2;
+    
+    // Vérifier que le répertoire n'est pas déjà plein
+    if(inodePathParent->iNodeStat.st_size >= BLOCK_SIZE) return -4;
+    
+    // Incrémenter la grosseur de size dans l'inode
+    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
+    
+    // Aller chercher un numéro d'iNode libre, puis le iNode associé à ce numéro
+    int freeInodeNumber = getFirstFreeInode();
+    iNodeEntry *iNode = alloca(sizeof(iNodeEntry));
+    getInode(freeInodeNumber, &iNode);
+    
+    // Initialisation du iNode selon les params voulus
+    iNode->iNodeStat.st_mode |= G_IFREG;
+    iNode->iNodeStat.st_mode |= G_IRWXG;
+    iNode->iNodeStat.st_mode |= G_IRWXU;
+    iNode->iNodeStat.st_size = 0;
+    iNode->iNodeStat.st_blocks = 0;
+    
+    // On écrit le iNode en mémoire
+    addiNodeToiNodeBlock(iNode);
+    return 0;
 }
 
 int bd_read(const char *pFilename, char *buffer, int offset, int numbytes) {
@@ -297,7 +378,9 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
     // On écrit le bloc modifié sur le disque
     WriteBlock(inodePathParent->Block[0], data);
     
-    // MANQUE L'ÉCRITURE DES INODES
+    // Écriture des inodes
+    addiNodeToiNodeBlock(inodePathExistant);
+    addiNodeToiNodeBlock(inodePathParent);
     
     return 0;
 }
