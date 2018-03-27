@@ -92,7 +92,9 @@ static int getFirstFreeInode(){
     if (errReadBlock == 0 || errReadBlock == -1) return -1;
     
     // On itère sur le bitmap d'iNodes, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
-    for (int i = 1; i < N_INODE_ON_DISK; i++){
+    for (int i = ROOT_INODE; i < N_INODE_ON_DISK; i++){
+        printf("%d ", i);
+        printf("Data[i] = %d\n", data[i]);
         if (data[i] != 0){
             printf("GLOFS : Saisie i-node %d\n", i);
             data[i] = 0;
@@ -291,6 +293,10 @@ int bd_create(const char *pFilename) {
     
     // Aller chercher un numéro d'iNode libre, puis le iNode associé à ce numéro
     int freeInodeNumber = getFirstFreeInode();
+    
+    // Si pu d'iNode disponible
+    if(freeInodeNumber == -1)return -5;
+    
     iNodeEntry *iNode = alloca(sizeof(iNodeEntry));
     getInode(freeInodeNumber, &iNode);
     

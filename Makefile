@@ -1,4 +1,5 @@
 all: ufs glofs
+
 cleanufs: clean
 
 ufsTest: UFS.o mainTest.o DisqueStegano.o lodepng.o
@@ -42,3 +43,5 @@ lodepng.o: lodepng.c lodepng.h
 
 clean: 
 	rm -f *.o ufs ufsTest glofs prompt TestsUnitaires TestDisqueStegano *.*~
+	cp google-go.png.orig google-go.png
+
