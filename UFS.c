@@ -92,9 +92,9 @@ static int getFirstFreeInode(){
     if (errReadBlock == 0 || errReadBlock == -1) return -1;
     
     // On itère sur le bitmap d'iNodes, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
-    for (int i = 0; i < N_INODE_ON_DISK; i++){
+    for (int i = 1; i < N_INODE_ON_DISK; i++){
         if (data[i] != 0){
-            printf("GLOFS : Saisi iNode %d", i);
+            printf("GLOFS : Saisie i-node %d\n", i);
             data[i] = 0;
             WriteBlock(FREE_INODE_BITMAP, data);
             return i;
@@ -266,7 +266,7 @@ int bd_stat(const char *pFilename, gstat *pStat) {
 
 int bd_create(const char *pFilename) {
     char parentFilename[4096];
-    
+    char trunkatedFilename[FILENAME_SIZE];
     GetDirFromPath(pFilename, parentFilename);
     
     // Aller chercher les numéros des inodes
@@ -300,12 +300,31 @@ int bd_create(const char *pFilename) {
     iNode->iNodeStat.st_mode |= G_IRWXU;
     iNode->iNodeStat.st_size = 0;
     iNode->iNodeStat.st_blocks = 0;
+    iNode->iNodeStat.st_nlink = 1;
+    iNode->iNodeStat.st_ino = freeInodeNumber;
     
     // On écrit le iNode en mémoire
     addiNodeToiNodeBlock(iNode);
+    
+    
+    char data[BLOCK_SIZE];
+    // Test du readblock
+    int errReadBlock = ReadBlock(inodePathParent->Block[0], data);
+    if(errReadBlock == 0 || errReadBlock == -1) return -1;
+    
+    // On regarde la quantité de fichiers présents dans le iNode du parent
+    DirEntry *dirData = (DirEntry*) data;
+    int qtDir = NumberofDirEntry(inodePathParent->iNodeStat.st_size);
+    GetFilenameFromPath(pFilename, trunkatedFilename);
+    
+    // On ajoute le nom et le iNode
+    strcpy(dirData[qtDir].Filename, trunkatedFilename);
+    dirData[qtDir].iNode = freeInodeNumber;
+    
+    // On sauvegarde le bloc écrit
+    WriteBlock(inodePathParent->Block[0], data);
     return 0;
 }
-
 int bd_read(const char *pFilename, char *buffer, int offset, int numbytes) {
 	return -1;
 }
