@@ -380,10 +380,6 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
         return -4;
     }
     
-   //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
-    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
-    inodePathExistant->iNodeStat.st_nlink++;
-    
     // On va chercher le bloc associé au parent
     char data[BLOCK_SIZE];
     ReadBlock(inodePathParent->Block[0], data);
@@ -391,6 +387,10 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
     
     // On trouve le premier endroit disponible pour mettre le hardlink
     int numEntry = NumberofDirEntry(inodePathParent->iNodeStat.st_size);
+    
+    //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
+    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
+    inodePathExistant->iNodeStat.st_nlink++;
     
     // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
     entries[numEntry].iNode = inodeNumPathExistant;
