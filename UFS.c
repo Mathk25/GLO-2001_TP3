@@ -169,6 +169,7 @@ static int getInodeFromPath(const char *path){
     files = strtok (pathCopy,"/");
     
     // On itère sur chaque élément de la path, donc sur les files
+    // code tiré de http://www.cplusplus.com/reference/cstring/strtok/
     while (files != NULL)
     {
         lastInode = getFileInodeNumber(files, lastInode);
@@ -188,7 +189,7 @@ int bd_countfreeblocks(void) {
     int errReadBlock;
     
     // On assigne une valeur de retour à la fonction ReadBLock
-    errReadBlock = ReadBlock(2, data);
+    errReadBlock = ReadBlock(FREE_BLOCK_BITMAP, data);
 
     if (errReadBlock == 0 || errReadBlock == -1){
         return errReadBlock;
@@ -237,7 +238,68 @@ int bd_write(const char *pFilename, const char *buffer, int offset, int numbytes
 }
 
 int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
-	return -1;
+    // On va chercher les numéros d'inodes de pPathExistant et de pPathNouveauLien
+    int inodeNumPathExistant = getInodeFromPath(pPathExistant);
+    int inodeNumPathNouveau = getInodeFromPath(pPathNouveauLien);
+    
+    // On va chercher l'inode correspondant à pPathExistant
+    iNodeEntry* inodePathExistant  = alloca(sizeof(*inodePathExistant));
+    getInode(inodeNumPathExistant, &inodePathExistant);
+    
+    // On va chercher le path du parent de pPathNouveauLien, ainsi que l'inode associé à celui-ci
+    char pathParent[4096];
+    GetDirFromPath(pPathNouveauLien, pathParent);
+    iNodeEntry* inodePathParent = alloca(sizeof(*inodePathParent));
+    int inodeNumParent = getInodeFromPath(pathParent);
+    getInode(inodeNumParent, &inodePathParent);
+    
+    
+    // On vérifie que le fichier pointé par pPathExistant existe et que l'inode pointé par le parent de pPathNouveauLien
+    if(inodeNumPathExistant == -1 || inodeNumParent == -1){
+        return -1;
+    }
+    
+    // On vérifie que le fichier pointé par pPathNouveauLien n'existe pas
+    if(inodeNumPathNouveau != -1){
+        return -2;
+    }
+    
+    // On vérifie que pPathExistant n'est pas un directory et qu'il est un fichier normal
+    if ((inodePathExistant->iNodeStat.st_mode & G_IFDIR) && !(inodePathExistant->iNodeStat.st_mode & G_IFREG)){
+        return -3;
+    }
+    
+    // On vérifie que le dossier parent de pPathNouveau lien n'est pas plein
+    if(inodePathParent->iNodeStat.st_size >= BLOCK_SIZE){
+        return -4;
+    }
+    
+   //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
+    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
+    inodePathExistant->iNodeStat.st_nlink++;
+    
+    // On va chercher le bloc associé au parent
+    char data[BLOCK_SIZE];
+    ReadBlock(inodePathParent->Block[0], data);
+    DirEntry* entries = (DirEntry*) data;
+    
+    // On trouve le premier endroit disponible pour mettre le hardlink
+    int numEntry = NumberofDirEntry(inodePathParent->iNodeStat.st_size);
+    
+    // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
+    entries[numEntry].iNode = inodeNumPathExistant;
+    
+    // On met le nom du fichier de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
+    char nomLien[FILENAME_SIZE];
+    GetFilenameFromPath(pPathNouveauLien, nomLien);
+    strcpy(entries[numEntry].Filename, nomLien);
+    
+    // On écrit le bloc modifié sur le disque
+    WriteBlock(inodePathParent->Block[0], data);
+    
+    // MANQUE L'ÉCRITURE DES INODES
+    
+    return 0;
 }
 
 int bd_unlink(const char *pFilename) {
