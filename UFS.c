@@ -93,12 +93,30 @@ static int getFirstFreeInode(){
     
     // On itère sur le bitmap d'iNodes, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
     for (int i = ROOT_INODE; i < N_INODE_ON_DISK; i++){
-        printf("%d ", i);
-        printf("Data[i] = %d\n", data[i]);
         if (data[i] != 0){
             printf("GLOFS : Saisie i-node %d\n", i);
             data[i] = 0;
             WriteBlock(FREE_INODE_BITMAP, data);
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int getFirstFreeBlock(){
+    char data[BLOCK_SIZE];
+    int errReadBlock;
+    
+    // On vérifie le retour de la fonction readBlock
+    errReadBlock = ReadBlock(FREE_BLOCK_BITMAP, data);
+    if (errReadBlock == 0 || errReadBlock == -1) return -1;
+    
+    // On itère sur le bitmap de blocs, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
+    for (int i = 0; i < N_BLOCK_ON_DISK; i++){
+        if (data[i] != 0){
+            printf("GLOFS : Saisie bloc %d\n", i);
+            data[i] = 0;
+            WriteBlock(FREE_BLOCK_BITMAP, data);
             return i;
         }
     }
@@ -130,6 +148,8 @@ static int addiNodeToiNodeBlock(iNodeEntry *iNode){
     return 0;
 }
 
+
+
 // Copie un inode dans entry selon un numéro d'inode
 static int getInode(int inodeNumber, iNodeEntry **entry){
     char data[BLOCK_SIZE];
@@ -154,6 +174,40 @@ static int getInode(int inodeNumber, iNodeEntry **entry){
         (*entry)->Block[i] = inode->Block[i];
     }
     
+    return 0;
+}
+
+static int releaseInode(int numInode){
+    char data[BLOCK_SIZE];
+    ReadBlock(FREE_INODE_BITMAP, data);
+    data[numInode] = 1;
+    printf("GLOFS: Relache i-node %d\n", numInode);
+    WriteBlock(FREE_INODE_BITMAP, data);
+    
+    iNodeEntry* inode = alloca(sizeof(inode));
+    getInode(numInode, &inode);
+    
+    inode->iNodeStat.st_blocks = 0;
+    inode->iNodeStat.st_ino = numInode;
+    inode->iNodeStat.st_mode &= ~G_IRWXG;
+    inode->iNodeStat.st_mode &= ~G_IRWXU;
+    inode->iNodeStat.st_mode &= ~G_IFDIR;
+    inode->iNodeStat.st_mode &= ~G_IFREG;
+    inode->iNodeStat.st_mode &= ~G_IFLNK;
+    inode->iNodeStat.st_nlink = 0;
+    inode->iNodeStat.st_size = 0;
+    
+    addiNodeToiNodeBlock(inode);
+    
+    return 0;
+}
+
+static int releaseBlock(int numBlock){
+    char data[BLOCK_SIZE];
+    ReadBlock(FREE_BLOCK_BITMAP, data);
+    data[numBlock] = 1;
+    printf("GLOFS: Relache bloc %d\n", numBlock);
+    WriteBlock(FREE_BLOCK_BITMAP, data);
     return 0;
 }
 
@@ -331,16 +385,180 @@ int bd_create(const char *pFilename) {
     WriteBlock(inodePathParent->Block[0], data);
     return 0;
 }
+
 int bd_read(const char *pFilename, char *buffer, int offset, int numbytes) {
-	return -1;
+	int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    
+    getInode(iNodeNumFilename, &iNodeFilename);
+    
+    // On vérifie que le fichier existe
+    if(iNodeNumFilename == -1){
+        return -1;
+    }
+    // On vérifie que le fichier n'est pas un répertoire
+    if(iNodeFilename->iNodeStat.st_mode & G_IFDIR){
+        return -2;
+    }
+
+    // On regarde si le bloc est vide
+    if(iNodeFilename->iNodeStat.st_blocks == 0){
+        return 0;
+    }
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(iNodeFilename->Block[0], data);
+    
+    int i = 0;
+    
+    while (i < numbytes && offset < iNodeFilename->iNodeStat.st_size){
+        buffer[i] = data[offset];
+        i++;
+        offset++;
+    }
+    
+    return i;
 }
 
 int bd_mkdir(const char *pDirName) {
-	return -1;
+    char parentDir[4096];
+    GetDirFromPath(pDirName, parentDir);
+    
+    int parentiNodeNum = getInodeFromPath(parentDir);
+    
+    // On regarde si le directory du parent existe
+    if(parentiNodeNum == -1) return -1;
+    
+    int diriNode = getInodeFromPath(pDirName);
+    
+    // On regarde si le fichier existe déjà
+    if (diriNode != -1) return -2;
+    
+    char fileName[FILENAME_SIZE];
+    GetFilenameFromPath(pDirName, fileName);
+    
+    // On regarde si le nom du fichier n'est pas vide
+    if (strcmp(fileName, "") == 0)return -3;
+    
+    // On regarde si le fichier n'est pas plein déjà
+    iNodeEntry* parentiNode = alloca(sizeof(*parentiNode));
+    getInode(parentiNodeNum, &parentiNode);
+    if (parentiNode->iNodeStat.st_size >= BLOCK_SIZE)return -4;
+    
+    int reservediNodeNum = getFirstFreeInode();
+    iNodeEntry* newiNode = alloca(sizeof(*newiNode));
+    
+    getInode(reservediNodeNum, &newiNode);
+    
+    newiNode->iNodeStat.st_mode |= G_IFDIR;
+    newiNode->iNodeStat.st_ino = reservediNodeNum;
+    newiNode->iNodeStat.st_nlink = 2;
+    newiNode->iNodeStat.st_size = 2 * sizeof(DirEntry);
+    newiNode->iNodeStat.st_blocks = 1;
+    
+    int freeBlockNum = getFirstFreeBlock();
+    newiNode->Block[0] = freeBlockNum;
+    addiNodeToiNodeBlock(newiNode);
+    
+    
+    char data[BLOCK_SIZE];
+    // On va chercher le bloc associé au courrant
+    ReadBlock(newiNode->Block[0], data);
+    DirEntry* entries = (DirEntry*) data;
+    
+    int numEntry = 0;
+    
+    // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
+    entries[numEntry++].iNode = reservediNodeNum;
+    strcpy(entries[numEntry].Filename, ".");
+    
+    entries[numEntry].iNode = parentiNodeNum;
+    strcpy(entries[numEntry].Filename, "..");
+    
+    // On écrit le bloc modifié sur le disque
+    WriteBlock(newiNode->Block[0], data);
+    
+    // On va chercher le bloc associé au parent
+    ReadBlock(parentiNode->Block[0], data);
+    entries = (DirEntry*) data;
+    
+    // On trouve le premier endroit disponible pour mettre le hardlink
+    numEntry = NumberofDirEntry(parentiNode->iNodeStat.st_size);
+    
+    //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
+    parentiNode->iNodeStat.st_size += sizeof(DirEntry);
+    parentiNode->iNodeStat.st_nlink++;
+    
+    // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
+    entries[numEntry].iNode = reservediNodeNum;
+    
+    // On met le nom du fichier de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
+    char nomLien[FILENAME_SIZE];
+    GetFilenameFromPath(pDirName, nomLien);
+    strcpy(entries[numEntry].Filename, nomLien);
+    
+    // On écrit le bloc modifié sur le disque
+    WriteBlock(parentiNode->Block[0], data);
+    
+    // Écriture des inodes
+    addiNodeToiNodeBlock(parentiNode);
+    
+    return 0;
+
 }
 
 int bd_write(const char *pFilename, const char *buffer, int offset, int numbytes) { 
-	return -1;
+    int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    
+    getInode(iNodeNumFilename, &iNodeFilename);
+    
+    // On vérifie que le fichier existe
+    if(iNodeNumFilename == -1){
+        return -1;
+    }
+    // On vérifie que le fichier n'est pas un répertoire
+    if(iNodeFilename->iNodeStat.st_mode & G_IFDIR){
+        return -2;
+    }
+    
+    // On regarde si le bloc est vide
+    if(iNodeFilename->iNodeStat.st_blocks == 0){
+        return 0;
+    }
+    
+    if(offset > iNodeFilename->iNodeStat.st_size){
+        return -3;
+    }
+    
+    // On vérifie que l'offset n'est pas plus grand que la taille maximale d'un fichier
+    if(offset > MAX_FILE_SIZE){
+        return -4;
+    }
+    
+    if(iNodeFilename->iNodeStat.st_blocks == 0 && iNodeFilename->iNodeStat.st_size == 0 && numbytes > 0) {
+        iNodeFilename->Block[0] = getFirstFreeBlock();
+        iNodeFilename->iNodeStat.st_blocks++;
+    }
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(iNodeFilename->Block[0], data);
+    
+    int i = 0;
+    
+    
+    while (i < numbytes && iNodeFilename->iNodeStat.st_size < MAX_FILE_SIZE){
+        data[offset] = buffer[i];
+        i++;
+        offset++;
+        if (i > iNodeFilename->iNodeStat.st_size || offset > iNodeFilename->iNodeStat.st_size){
+            iNodeFilename->iNodeStat.st_size++;
+        }
+    }
+    
+    addiNodeToiNodeBlock(iNodeFilename);
+    WriteBlock(iNodeFilename->Block[0], data);
+    return i;
 }
 
 int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
@@ -411,7 +629,64 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
 }
 
 int bd_unlink(const char *pFilename) {
-	return -1;
+	int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    getInode(iNodeNumFilename, &iNodeFilename);
+    
+    // On regarde si le fichier existe
+    if(iNodeNumFilename == -1)return -1;
+    
+    // On regarde si le fichier est un fichier normal
+    if(!(iNodeFilename->iNodeStat.st_mode & G_IFREG))return -2;
+    
+    
+    char parentDir[4096];
+    GetDirFromPath(pFilename, parentDir);
+    int iNodeNumParent = getInodeFromPath(parentDir);
+    
+    iNodeEntry* iNodeParent = alloca(sizeof(*iNodeParent));
+    getInode(iNodeNumParent, &iNodeParent);
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(iNodeParent->Block[0], data);
+    DirEntry* entries = (DirEntry*) data;
+    
+    int qtDir = NumberofDirEntry(iNodeParent->iNodeStat.st_size);
+    
+    char filename[FILENAME_SIZE];
+    GetFilenameFromPath(pFilename, filename);
+
+    for(int i = 0; i < qtDir; i++){
+        if(strcmp(entries[i].Filename, filename) == 0){
+            for (int j = i; j < qtDir - 1; j++) {
+                entries[j] = entries[j+1];
+                }
+            break;
+            }
+    }
+    
+    WriteBlock(iNodeParent->Block[0], data);
+    
+    iNodeParent->iNodeStat.st_size -= sizeof(DirEntry);
+    addiNodeToiNodeBlock(iNodeParent);
+    
+    // On décrémente le nombre de liens
+    iNodeFilename->iNodeStat.st_nlink--;
+    
+    
+    // Si on a 0 liens, on doit relacher le iNode
+    if(iNodeFilename->iNodeStat.st_nlink == 0){
+        if(iNodeFilename->iNodeStat.st_blocks > 0){
+            releaseBlock(iNodeFilename->Block[0]);
+        }
+        releaseInode(iNodeNumFilename);
+    } else {
+        addiNodeToiNodeBlock(iNodeFilename);
+    }
+    
+    
+    return 0;
+    
 }
 
 int bd_truncate(const char *pFilename, int NewSize) {
