@@ -342,8 +342,6 @@ int bd_create(const char *pFilename) {
     // Vérifier que le répertoire n'est pas déjà plein
     if(inodePathParent->iNodeStat.st_size >= BLOCK_SIZE) return -4;
     
-    // Incrémenter la grosseur de size dans l'inode
-    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
     
     // Aller chercher un numéro d'iNode libre, puis le iNode associé à ce numéro
     int freeInodeNumber = getFirstFreeInode();
@@ -351,13 +349,14 @@ int bd_create(const char *pFilename) {
     // Si pu d'iNode disponible
     if(freeInodeNumber == -1)return -5;
     
-    iNodeEntry *iNode = alloca(sizeof(iNodeEntry));
+    iNodeEntry *iNode = alloca(sizeof(iNode));
     getInode(freeInodeNumber, &iNode);
     
     // Initialisation du iNode selon les params voulus
     iNode->iNodeStat.st_mode |= G_IFREG;
     iNode->iNodeStat.st_mode |= G_IRWXG;
     iNode->iNodeStat.st_mode |= G_IRWXU;
+    iNode->iNodeStat.st_mode &= ~G_IFDIR;
     iNode->iNodeStat.st_size = 0;
     iNode->iNodeStat.st_blocks = 0;
     iNode->iNodeStat.st_nlink = 1;
@@ -380,6 +379,10 @@ int bd_create(const char *pFilename) {
     // On ajoute le nom et le iNode
     strcpy(dirData[qtDir].Filename, trunkatedFilename);
     dirData[qtDir].iNode = freeInodeNumber;
+    
+    // Incrémenter la grosseur de size dans l'inode
+    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
+    addiNodeToiNodeBlock(inodePathParent);
     
     // On sauvegarde le bloc écrit
     WriteBlock(inodePathParent->Block[0], data);
@@ -421,7 +424,7 @@ int bd_read(const char *pFilename, char *buffer, int offset, int numbytes) {
 }
 
 int bd_mkdir(const char *pDirName) {
-    char parentDir[4096];
+    char parentDir[strlen(pDirName)];
     GetDirFromPath(pDirName, parentDir);
     
     int parentiNodeNum = getInodeFromPath(parentDir);
@@ -451,6 +454,8 @@ int bd_mkdir(const char *pDirName) {
     getInode(reservediNodeNum, &newiNode);
     
     newiNode->iNodeStat.st_mode |= G_IFDIR;
+    newiNode->iNodeStat.st_mode |= G_IRWXG;
+    newiNode->iNodeStat.st_mode |= G_IRWXU;
     newiNode->iNodeStat.st_ino = reservediNodeNum;
     newiNode->iNodeStat.st_nlink = 2;
     newiNode->iNodeStat.st_size = 2 * sizeof(DirEntry);
@@ -566,7 +571,7 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
     getInode(inodeNumPathExistant, &inodePathExistant);
     
     // On va chercher le path du parent de pPathNouveauLien, ainsi que l'inode associé à celui-ci
-    char pathParent[4096];
+    char pathParent[strlen(pPathNouveauLien)];
     GetDirFromPath(pPathNouveauLien, pathParent);
     iNodeEntry* inodePathParent = alloca(sizeof(*inodePathParent));
     int inodeNumParent = getInodeFromPath(pathParent);
@@ -593,17 +598,19 @@ int bd_hardlink(const char *pPathExistant, const char *pPathNouveauLien) {
         return -4;
     }
     
+    
+    // On trouve le premier endroit disponible pour mettre le hardlink
+    int numEntry = NumberofDirEntry(inodePathParent->iNodeStat.st_size);
+    //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
+    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
+    inodePathExistant->iNodeStat.st_nlink++;
+    
     // On va chercher le bloc associé au parent
     char data[BLOCK_SIZE];
     ReadBlock(inodePathParent->Block[0], data);
     DirEntry* entries = (DirEntry*) data;
     
-    // On trouve le premier endroit disponible pour mettre le hardlink
-    int numEntry = NumberofDirEntry(inodePathParent->iNodeStat.st_size);
     
-    //On incrémente la grosseur du dossier parent du nouveau lien et le nombre de liens de pPathExistant
-    inodePathParent->iNodeStat.st_size += sizeof(DirEntry);
-    inodePathExistant->iNodeStat.st_nlink++;
     
     // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
     entries[numEntry].iNode = inodeNumPathExistant;
@@ -742,7 +749,7 @@ int bd_rmdir(const char *pFilename) {
     }
     
     // On va chercher le inode du parent
-    char parentPath[4096];
+    char parentPath[strlen(pFilename)];
     GetDirFromPath(pFilename, parentPath);
     int iNodeNumParent = getInodeFromPath(parentPath);
     iNodeEntry* parentInode = alloca(sizeof(*parentInode));
@@ -761,12 +768,14 @@ int bd_rmdir(const char *pFilename) {
     // On compacte les entrées des fichiers
     for(int i = 0; i < qtDir; i++){
         if(strcmp(entries[i].Filename, filename) == 0){
-            for (int j = i; j < qtDir - 1; j++) {
+            for (int j = i; j < qtDir; j++) {
                 entries[j] = entries[j+1];
             }
             break;
         }
     }
+    
+    parentInode->iNodeStat.st_size -= sizeof(DirEntry);
     
     // On écrit nos modifications sur le parent
     WriteBlock(parentInode->Block[0], data);
@@ -780,7 +789,7 @@ int bd_rmdir(const char *pFilename) {
 }
 
 int bd_rename(const char *pFilename, const char *pDestFilename) {
-    char parentPath[4096];
+    char parentPath[strlen(pFilename)];
     GetDirFromPath(pFilename, parentPath);
     int iNodeNumFilename = getInodeFromPath(pFilename);
     iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
@@ -788,19 +797,18 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
     char filename[FILENAME_SIZE];
     GetFilenameFromPath(pFilename, filename);
     
-    char DestFilename[4096];
+    char DestFilename[strlen(pDestFilename)];
     GetDirFromPath(pDestFilename, DestFilename);
     int iNodeNumDestParent = getInodeFromPath(DestFilename);
     iNodeEntry* iNodeDestParent = alloca(sizeof(*iNodeDestParent));
     getInode(iNodeNumDestParent, &iNodeDestParent);
     
-    char newFilename[4096];
+    char newFilename[strlen(pDestFilename)];
     GetFilenameFromPath(pDestFilename, newFilename);
     
     int iNodeNumParent = getInodeFromPath(parentPath);
     iNodeEntry* parentInode = alloca(sizeof(*parentInode));
     getInode(iNodeNumParent, &parentInode);
-    
     
     if(iNodeNumFilename == -1 || iNodeNumDestParent == -1) return -1;
     
@@ -833,73 +841,90 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
         return -4;
     }
     
+    //////////////// DANS LE CAS D'UN DIRECTORY            ////////////////
     //////////////// SUPPRIMER DU FICHIER PARENT DE DÉPART ////////////////
-    // On regarde si le fichier existe
     
-    // On décrémente ele nombre de liens du parent
-    parentInode->iNodeStat.st_nlink--;
-    
-    // On trouve la quantité de fichiers dans le dossier parent
-    int qtDir = NumberofDirEntry(parentInode->iNodeStat.st_size);
-    
-    char data[BLOCK_SIZE];
-    ReadBlock(parentInode->Block[0], data);
-    DirEntry* entries = (DirEntry*) data;
-    
-    // On compacte les entrées des fichiers
-    for(int i = 0; i < qtDir; i++){
-        if(strcmp(entries[i].Filename, filename) == 0){
-            for (int j = i; j < qtDir - 1; j++) {
-                entries[j] = entries[j+1];
-            }
-            break;
-        }
-    }
-    parentInode->iNodeStat.st_size -= sizeof(DirEntry);
-    
-    // On écrit nos modifications sur le parent
-    WriteBlock(parentInode->Block[0], data);
-    addiNodeToiNodeBlock(parentInode);
-    ///////////////////////////////////////////////////////////////////////
-    
-    //////////////// AJOUTER AU FICHIER PARENT NOUVEAU ///////////////////
-    iNodeDestParent->iNodeStat.st_size += sizeof(DirEntry);
-    ReadBlock(iNodeDestParent->Block[0], data);
-    
-    iNodeDestParent->iNodeStat.st_nlink++;
-    
-    // On regarde la quantité de fichiers présents dans le iNode du parent
-    DirEntry *dirData = (DirEntry*) data;
-    qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
-    
-    // On ajoute le nom et le iNode
-    strcpy(dirData[qtDir].Filename, filename);
-    dirData[qtDir].iNode = iNodeFilename->iNodeStat.st_ino;
-    
-    // On écrit nos modifications sur le parent
-    WriteBlock(iNodeDestParent->Block[0], data);
-    addiNodeToiNodeBlock(iNodeDestParent);
-    ///////////////////////////////////////////////////////////////////////
-    
-    ///////////// ON VOULAIT EN PLUS MODIFIER LE NOM //////////////////////
-    if(strcmp(filename, newFilename) != 0){
+    // On décrémente le nombre de liens du parent
+    if (iNodeFilename->iNodeStat.st_mode & G_IFDIR) {
+        
+        parentInode->iNodeStat.st_nlink--;
         // On trouve la quantité de fichiers dans le dossier parent
-        int qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
+        int qtDir = NumberofDirEntry(parentInode->iNodeStat.st_size);
         
         char data[BLOCK_SIZE];
-        ReadBlock(iNodeDestParent->Block[0], data);
+        ReadBlock(parentInode->Block[0], data);
         DirEntry* entries = (DirEntry*) data;
         
         // On compacte les entrées des fichiers
         for(int i = 0; i < qtDir; i++){
             if(strcmp(entries[i].Filename, filename) == 0){
-                strcpy(entries[i].Filename, newFilename);
+                for (int j = i; j < qtDir; j++) {
+                    entries[j] = entries[j+1];
+                }
                 break;
             }
         }
+        parentInode->iNodeStat.st_size -= sizeof(DirEntry);
         
         // On écrit nos modifications sur le parent
         WriteBlock(parentInode->Block[0], data);
+        addiNodeToiNodeBlock(parentInode);
+        
+        /////////////////////////////////////////////////////////////////////
+        
+        //////////////// AJOUTER AU FICHIER PARENT NOUVEAU ///////////////////
+        DirEntry *dirData = (DirEntry*) data;
+        qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
+        iNodeDestParent->iNodeStat.st_size += sizeof(DirEntry);
+        ReadBlock(iNodeDestParent->Block[0], data);
+
+        iNodeDestParent->iNodeStat.st_nlink++;
+
+        // On regarde la quantité de fichiers présents dans le iNode du parent
+        
+
+        // On ajoute le nom et le iNode
+        strcpy(dirData[qtDir].Filename, filename);
+        dirData[qtDir].iNode = iNodeFilename->iNodeStat.st_ino;
+
+        // On écrit nos modifications sur le parent
+        WriteBlock(iNodeDestParent->Block[0], data);
+        addiNodeToiNodeBlock(iNodeDestParent);
+        ///////////////////////////////////////////////////////////////////////
+
+        ///////////// ON MODIFIE SON PROPRE PARENT ////////////////////////////
+        ReadBlock(iNodeFilename->Block[0], data);
+        dirData = (DirEntry*) data;
+        dirData[1].iNode = iNodeNumDestParent;
+        WriteBlock(iNodeFilename->Block[0], data);
+        ///////////////////////////////////////////////////////////////////////
+        
+        ///////////// ON VOULAIT EN PLUS MODIFIER LE NOM //////////////////////
+        if(strcmp(filename, newFilename) != 0){
+            // On trouve la quantité de fichiers dans le dossier parent
+            int qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
+
+            char data[BLOCK_SIZE];
+            ReadBlock(iNodeDestParent->Block[0], data);
+            DirEntry* entries = (DirEntry*) data;
+
+            // On compacte les entrées des fichiers
+            for(int i = 0; i < qtDir; i++){
+                if(strcmp(entries[i].Filename, filename) == 0){
+                    strcpy(entries[i].Filename, newFilename);
+                    break;
+                }
+            }
+
+            // On écrit nos modifications sur le parent
+            WriteBlock(parentInode->Block[0], data);
+        }
+        //////////////////////////////////////////////////////////////////////
+    }
+    //////////////////// DÉPLACER UN FICHIER /////////////////////////////
+    if (iNodeFilename->iNodeStat.st_mode & G_IFREG) {
+        bd_hardlink(pFilename, pDestFilename);
+        bd_unlink(pFilename);
     }
     //////////////////////////////////////////////////////////////////////
     
@@ -907,11 +932,53 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
 }
 
 int bd_readdir(const char *pDirLocation, DirEntry **ppListeFichiers) {
-	return -1;
+    int iNodeNumDirLocation = getInodeFromPath(pDirLocation);
+    iNodeEntry* iNodeDirLocation = alloca(sizeof(*iNodeDirLocation));
+    getInode(iNodeNumDirLocation, &iNodeDirLocation);
+    
+    // On regarde si le fichier existe
+    if(iNodeNumDirLocation == -1)return -1;
+    
+    // On regarde si le fichier est un fichier répertoire
+    if(!(iNodeDirLocation->iNodeStat.st_mode & G_IFDIR))return -2;
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(iNodeDirLocation->Block[0], data);
+    
+    DirEntry* dataEntry = (DirEntry*) data;
+    
+    *ppListeFichiers = (DirEntry* ) malloc(iNodeDirLocation->iNodeStat.st_size);
+    
+    memcpy(*ppListeFichiers, dataEntry, iNodeDirLocation->iNodeStat.st_size);
+    
+    return NumberofDirEntry(iNodeDirLocation->iNodeStat.st_size);
 }
 
 int bd_symlink(const char *pPathExistant, const char *pPathNouveauLien) {
-    return -1;
+    int iNodeNumPathNouveauLien = getInodeFromPath(pPathNouveauLien);
+    iNodeEntry* iNodePathNouveauLien = alloca(sizeof(*iNodePathNouveauLien));
+    getInode(iNodeNumPathNouveauLien, &iNodePathNouveauLien);
+    
+    char parentPath[strlen(pPathNouveauLien)];
+    GetDirFromPath(pPathNouveauLien, parentPath);
+    
+    int iNodeNumParentPathNouveauLien = getInodeFromPath(parentPath);
+    
+    // On regarde si le fichier parent existe
+    if(iNodeNumParentPathNouveauLien == -1)return -1;
+    
+    // On regarde si le fichier existe déjà
+    if(iNodeNumPathNouveauLien != -1){
+        return -2;
+    }
+    
+    bd_create(pPathNouveauLien);
+    iNodePathNouveauLien->iNodeStat.st_mode |= G_IFLNK;
+    
+    addiNodeToiNodeBlock(iNodePathNouveauLien);
+    
+    bd_write(pPathNouveauLien, pPathExistant, 0, (int)strlen(pPathExistant)-1);
+    return 0;
 }
 
 int bd_readlink(const char *pPathLien, char *pBuffer, int sizeBuffer) {

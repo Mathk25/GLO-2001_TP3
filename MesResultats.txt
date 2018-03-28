@@ -5,7 +5,7 @@ Je copie le fichier google-go.png.orig vers google-go.png
 --------------------------------------------------------------------
 
 ls / 
- drwxrwx              . size:     128 inode:  1 nlink: 6 
+ drwxrwx              . site:     128 inode:  1 nlink: 6 
  drwxrwx             .. size:     128 inode:  1 nlink: 6 
  drwxrwx            doc size:      48 inode:  2 nlink: 3 
  drwxrwx            rep size:      32 inode:  3 nlink: 2 

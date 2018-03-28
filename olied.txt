@@ -5,22 +5,44 @@ Je copie le fichier google-go.png.orig vers google-go.png
 --------------------------------------------------------------------
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     128 inode:  1 nlink: 6 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx            rep size:      32 inode:  3 nlink: 2 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ -rwxrwx          b.txt size:      29 inode:  7 nlink: 1 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+RetVal:8
 
 ls /doc 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  2 nlink: 3 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx            tmp size:      48 inode:  5 nlink: 3 
+RetVal:3
 
 ls /doc/tmp 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  5 nlink: 3 
+ drwxrwx             .. size:      48 inode:  2 nlink: 3 
+ drwxrwx         subtmp size:      48 inode:  6 nlink: 2 
+RetVal:3
 
 ls /doc/tmp/subtmp 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  6 nlink: 2 
+ drwxrwx             .. size:      48 inode:  5 nlink: 3 
+ -rwxrwx          b.txt size:       0 inode:  8 nlink: 1 
+RetVal:3
 
 ls /rep 
-RetVal:-1
+ drwxrwx              . size:      32 inode:  3 nlink: 2 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+RetVal:2
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  4 nlink: 2 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ -rwxrwx    LesAmis.txt size:       0 inode:  9 nlink: 1 
+RetVal:3
 
 
 --------------------------------------------------------------------
@@ -51,7 +73,15 @@ RetVal:25
 Doit afficher des numéros d'i-node différents pour /b.txt et /symlinkb.txt:
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     128 inode:  1 nlink: 6 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx            rep size:      32 inode:  3 nlink: 2 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ -rwxrwx          b.txt size:      29 inode:  7 nlink: 1 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+RetVal:8
 
 
 --------------------------------------------------------------------
@@ -75,7 +105,7 @@ ls /mauvais
 RetVal:-1
 
 ls /b.txt 
-RetVal:-1
+RetVal:-2
 
 
 --------------------------------------------------------------------
@@ -258,11 +288,17 @@ RetVal:25
 Doit réussir:
 
 hardlink /b.txt /hlnb.txt 
+pPathExistant (1er arg HL): /b.txt
+pPathNouveauLien (2e): /hlnb.txt
+7 1
 RetVal:0
 
 Doit échouer avec -2, car hlnb.txt existe déjà:
 
 hardlink /b.txt /hlnb.txt 
+pPathExistant (1er arg HL): /b.txt
+pPathNouveauLien (2e): /hlnb.txt
+7 1
 RetVal:-2
 
 Doit afficher 25 blocs de libre:
@@ -274,7 +310,16 @@ RetVal:25
 Doit afficher les mêmes numéros d'i-node pour /b.txt et /hlnb.txt:
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     144 inode:  1 nlink: 6 
+ drwxrwx             .. size:     144 inode:  1 nlink: 6 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx            rep size:      32 inode:  3 nlink: 2 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ -rwxrwx          b.txt size:      50 inode:  7 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 2 
+RetVal:9
 
 
 --------------------------------------------------------------------
@@ -285,7 +330,15 @@ unlink /b.txt
 RetVal:0
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     128 inode:  1 nlink: 6 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx            rep size:      32 inode:  3 nlink: 2 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 1 
+RetVal:8
 
 Doit afficher 25 blocs de libre, car l'inode est toujours détenu par hlnb.txt:
 
@@ -299,7 +352,14 @@ GLOFS: Relache i-node 7
 RetVal:0
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     112 inode:  1 nlink: 6 
+ drwxrwx             .. size:     112 inode:  1 nlink: 6 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx            rep size:      32 inode:  3 nlink: 2 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+RetVal:7
 
 Doit afficher 26 blocs de libre, car l'inode a été libéré:
 
@@ -322,7 +382,9 @@ GLOFS: Relache i-node 8
 RetVal:0
 
 ls /doc/tmp/subtmp 
-RetVal:-1
+ drwxrwx              . size:      32 inode:  6 nlink: 2 
+ drwxrwx             .. size:      48 inode:  5 nlink: 3 
+RetVal:2
 
 Doit échouer avec -2, car /doc est un répertoire:
 
@@ -344,7 +406,14 @@ GLOFS: Relache i-node 3
 RetVal:0
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     112 inode:  1 nlink: 5 
+ drwxrwx             .. size:     112 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+RetVal:7
 
 Doit afficher 27 blocs de libre, car le fichier répertoire a été libéré:
 
@@ -358,7 +427,14 @@ rmdir /doc
 RetVal:-3
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     112 inode:  1 nlink: 5 
+ drwxrwx             .. size:     112 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+RetVal:7
 
 Doit échouer avec -3, car /doc/tmp n'est pas vide:
 
@@ -375,17 +451,37 @@ GLOFS : Saisie i-node 3
 RetVal:0
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     128 inode:  1 nlink: 5 
+ drwxrwx             .. size:     128 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
+RetVal:8
 
 create /doc/tmp/new.txt 
 GLOFS : Saisie i-node 7
 RetVal:0
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     128 inode:  1 nlink: 5 
+ drwxrwx             .. size:     128 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
+RetVal:8
 
 ls /doc/tmp 
-RetVal:-1
+ drwxrwx              . size:      64 inode:  5 nlink: 3 
+ drwxrwx             .. size:      48 inode:  2 nlink: 3 
+ drwxrwx         subtmp size:      32 inode:  6 nlink: 2 
+ -rwxrwx        new.txt size:       0 inode:  7 nlink: 1 
+RetVal:4
 
 
 --------------------------------------------------------------------
@@ -396,16 +492,34 @@ rename /Bonjour/LesAmis.txt /Bonjour/OncleG.txt
 RetVal:0
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  4 nlink: 2 
+ drwxrwx             .. size:     128 inode:  1 nlink: 5 
+ -rwxrwx     OncleG.txt size:       0 inode:  9 nlink: 1 
+RetVal:3
 
 rename /Bonjour/OncleG.txt /DansRoot.txt 
-RetVal:0
+pFilenamet: /Bonjour/OncleG.txt //// pDestFilename:/DansRoot.txt
+pPathExistant (1er arg HL): /Bonjour/OncleG.txt
+pPathNouveauLien (2e): /DansRoot.txt
+9 1
+0RetVal:0
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      32 inode:  4 nlink: 2 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+RetVal:2
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     144 inode:  1 nlink: 5 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      32 inode:  4 nlink: 2 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
+ -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
+RetVal:9
 
 
 --------------------------------------------------------------------
@@ -417,7 +531,9 @@ Nombre de blocs libres: 27
 RetVal:27
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      32 inode:  4 nlink: 2 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+RetVal:2
 
 mkdir /Bonjour/newdir 
 GLOFS : Saisie i-node 8
@@ -433,10 +549,22 @@ RetVal:26
 On vérifie que le nombre de lien nlink pour /Bonjour augmente de 1, à cause du sous-répertoire newdir:
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  4 nlink: 3 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ d------         newdir size:      32 inode:  8 nlink: 2 
+RetVal:3
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     144 inode:  1 nlink: 5 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ drwxrwx            doc size:      48 inode:  2 nlink: 3 
+ drwxrwx        Bonjour size:      48 inode:  4 nlink: 3 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
+ -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
+RetVal:9
 
 
 --------------------------------------------------------------------
@@ -444,10 +572,16 @@ RetVal:-1
 --------------------------------------------------------------------
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  4 nlink: 3 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ d------         newdir size:      32 inode:  8 nlink: 2 
+RetVal:3
 
 ls /doc 
-RetVal:-1
+ drwxrwx              . size:      48 inode:  2 nlink: 3 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ drwxrwx            tmp size:      64 inode:  5 nlink: 3 
+RetVal:3
 
 rename /doc/tmp /Bonjour/tmpmv 
 RetVal:0
@@ -455,7 +589,16 @@ RetVal:0
 On vérifie que le nombre de lien pour /Bonjour augmente de 1 et qu'il diminue de 1 pour /doc:
 
 ls / 
-RetVal:-1
+ drwxrwx              . size:     144 inode:  1 nlink: 5 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ drwxrwx            doc size:      32 inode:  2 nlink: 2 
+ drwxrwx        Bonjour size:      64 inode:  4 nlink: 4 
+ lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
+ -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
+RetVal:9
 
 On vérifie que le sous-réperoire tmpmv contient encore subtmp et new.txt:
 
@@ -471,7 +614,11 @@ rename /Bonjour/tmpmv2 /Bonjour/tmpmv3
 RetVal:-1
 
 ls /Bonjour 
-RetVal:-1
+ drwxrwx              . size:      64 inode:  4 nlink: 4 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ d------         newdir size:      32 inode:  8 nlink: 2 
+ -rwxrwx            � size:       0 inode:  7 nlink: 1 
+RetVal:4
 
 
 --------------------------------------------------------------------
@@ -479,16 +626,67 @@ RetVal:-1
 --------------------------------------------------------------------
 
 ls /full 
-RetVal:-1
+ drwxrwx              . size:     256 inode: 11 nlink: 2 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ -rwxrwx          0.txt size:       0 inode: 12 nlink: 1 
+ -rwxrwx          1.txt size:       0 inode: 13 nlink: 1 
+ -rwxrwx          2.txt size:       0 inode: 14 nlink: 1 
+ -rwxrwx          3.txt size:       0 inode: 15 nlink: 1 
+ -rwxrwx          4.txt size:       0 inode: 16 nlink: 1 
+ -rwxrwx          5.txt size:       0 inode: 17 nlink: 1 
+ -rwxrwx          6.txt size:       0 inode: 18 nlink: 1 
+ -rwxrwx          7.txt size:       0 inode: 19 nlink: 1 
+ -rwxrwx          8.txt size:       0 inode: 20 nlink: 1 
+ -rwxrwx          9.txt size:       0 inode: 21 nlink: 1 
+ -rwxrwx         10.txt size:       0 inode: 22 nlink: 1 
+ -rwxrwx         11.txt size:       0 inode: 23 nlink: 1 
+ -rwxrwx         12.txt size:       0 inode: 24 nlink: 1 
+ -rwxrwx         13.txt size:       0 inode: 25 nlink: 1 
+RetVal:16
 
 create /full/20.txt 
 RetVal:-4
 
 ls /full 
-RetVal:-1
+ drwxrwx              . size:     256 inode: 11 nlink: 2 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ -rwxrwx          0.txt size:       0 inode: 12 nlink: 1 
+ -rwxrwx          1.txt size:       0 inode: 13 nlink: 1 
+ -rwxrwx          2.txt size:       0 inode: 14 nlink: 1 
+ -rwxrwx          3.txt size:       0 inode: 15 nlink: 1 
+ -rwxrwx          4.txt size:       0 inode: 16 nlink: 1 
+ -rwxrwx          5.txt size:       0 inode: 17 nlink: 1 
+ -rwxrwx          6.txt size:       0 inode: 18 nlink: 1 
+ -rwxrwx          7.txt size:       0 inode: 19 nlink: 1 
+ -rwxrwx          8.txt size:       0 inode: 20 nlink: 1 
+ -rwxrwx          9.txt size:       0 inode: 21 nlink: 1 
+ -rwxrwx         10.txt size:       0 inode: 22 nlink: 1 
+ -rwxrwx         11.txt size:       0 inode: 23 nlink: 1 
+ -rwxrwx         12.txt size:       0 inode: 24 nlink: 1 
+ -rwxrwx         13.txt size:       0 inode: 25 nlink: 1 
+RetVal:16
 
 hardlink /full/10.txt /full/30.txt 
+pPathExistant (1er arg HL): /full/10.txt
+pPathNouveauLien (2e): /full/30.txt
+22 11
 RetVal:-4
 
 ls /full 
-RetVal:-1
+ drwxrwx              . size:     256 inode: 11 nlink: 2 
+ drwxrwx             .. size:     144 inode:  1 nlink: 5 
+ -rwxrwx          0.txt size:       0 inode: 12 nlink: 1 
+ -rwxrwx          1.txt size:       0 inode: 13 nlink: 1 
+ -rwxrwx          2.txt size:       0 inode: 14 nlink: 1 
+ -rwxrwx          3.txt size:       0 inode: 15 nlink: 1 
+ -rwxrwx          4.txt size:       0 inode: 16 nlink: 1 
+ -rwxrwx          5.txt size:       0 inode: 17 nlink: 1 
+ -rwxrwx          6.txt size:       0 inode: 18 nlink: 1 
+ -rwxrwx          7.txt size:       0 inode: 19 nlink: 1 
+ -rwxrwx          8.txt size:       0 inode: 20 nlink: 1 
+ -rwxrwx          9.txt size:       0 inode: 21 nlink: 1 
+ -rwxrwx         10.txt size:       0 inode: 22 nlink: 1 
+ -rwxrwx         11.txt size:       0 inode: 23 nlink: 1 
+ -rwxrwx         12.txt size:       0 inode: 24 nlink: 1 
+ -rwxrwx         13.txt size:       0 inode: 25 nlink: 1 
+RetVal:16
