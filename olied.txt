@@ -393,13 +393,13 @@ RetVal:-1
 --------------------------------------------------------------------
 
 rename /Bonjour/LesAmis.txt /Bonjour/OncleG.txt 
-RetVal:-1
+RetVal:0
 
 ls /Bonjour 
 RetVal:-1
 
 rename /Bonjour/OncleG.txt /DansRoot.txt 
-RetVal:-1
+RetVal:0
 
 ls /Bonjour 
 RetVal:-1
@@ -450,7 +450,7 @@ ls /doc
 RetVal:-1
 
 rename /doc/tmp /Bonjour/tmpmv 
-RetVal:-1
+RetVal:0
 
 On vérifie que le nombre de lien pour /Bonjour augmente de 1 et qu'il diminue de 1 pour /doc:
 

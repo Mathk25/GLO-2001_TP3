@@ -780,7 +780,130 @@ int bd_rmdir(const char *pFilename) {
 }
 
 int bd_rename(const char *pFilename, const char *pDestFilename) {
-	return -1;
+    char parentPath[4096];
+    GetDirFromPath(pFilename, parentPath);
+    int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    getInode(iNodeNumFilename, &iNodeFilename);
+    char filename[FILENAME_SIZE];
+    GetFilenameFromPath(pFilename, filename);
+    
+    char DestFilename[4096];
+    GetDirFromPath(pDestFilename, DestFilename);
+    int iNodeNumDestParent = getInodeFromPath(DestFilename);
+    iNodeEntry* iNodeDestParent = alloca(sizeof(*iNodeDestParent));
+    getInode(iNodeNumDestParent, &iNodeDestParent);
+    
+    char newFilename[4096];
+    GetFilenameFromPath(pDestFilename, newFilename);
+    
+    int iNodeNumParent = getInodeFromPath(parentPath);
+    iNodeEntry* parentInode = alloca(sizeof(*parentInode));
+    getInode(iNodeNumParent, &parentInode);
+    
+    
+    if(iNodeNumFilename == -1 || iNodeNumDestParent == -1) return -1;
+    
+    
+    //////// JUSTE CHANGER LE NOM /////////
+    if(strcmp(parentPath, DestFilename) == 0){
+        // On trouve la quantité de fichiers dans le dossier parent
+        int qtDir = NumberofDirEntry(parentInode->iNodeStat.st_size);
+        
+        char data[BLOCK_SIZE];
+        ReadBlock(parentInode->Block[0], data);
+        DirEntry* entries = (DirEntry*) data;
+        
+        // On compacte les entrées des fichiers
+        for(int i = 0; i < qtDir; i++){
+            if(strcmp(entries[i].Filename, filename) == 0){
+                strcpy(entries[i].Filename, newFilename);
+                break;
+            }
+        }
+        
+        // On écrit nos modifications sur le parent
+        WriteBlock(parentInode->Block[0], data);
+        return 0;
+    }
+    //////////////////////////////////////////
+    
+    // On vérifie que le dossier parent de pPathNouveau lien n'est pas plein
+    if(iNodeDestParent->iNodeStat.st_size >= BLOCK_SIZE){
+        return -4;
+    }
+    
+    //////////////// SUPPRIMER DU FICHIER PARENT DE DÉPART ////////////////
+    // On regarde si le fichier existe
+    
+    // On décrémente ele nombre de liens du parent
+    parentInode->iNodeStat.st_nlink--;
+    
+    // On trouve la quantité de fichiers dans le dossier parent
+    int qtDir = NumberofDirEntry(parentInode->iNodeStat.st_size);
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(parentInode->Block[0], data);
+    DirEntry* entries = (DirEntry*) data;
+    
+    // On compacte les entrées des fichiers
+    for(int i = 0; i < qtDir; i++){
+        if(strcmp(entries[i].Filename, filename) == 0){
+            for (int j = i; j < qtDir - 1; j++) {
+                entries[j] = entries[j+1];
+            }
+            break;
+        }
+    }
+    parentInode->iNodeStat.st_size -= sizeof(DirEntry);
+    
+    // On écrit nos modifications sur le parent
+    WriteBlock(parentInode->Block[0], data);
+    addiNodeToiNodeBlock(parentInode);
+    ///////////////////////////////////////////////////////////////////////
+    
+    //////////////// AJOUTER AU FICHIER PARENT NOUVEAU ///////////////////
+    iNodeDestParent->iNodeStat.st_size += sizeof(DirEntry);
+    ReadBlock(iNodeDestParent->Block[0], data);
+    
+    iNodeDestParent->iNodeStat.st_nlink++;
+    
+    // On regarde la quantité de fichiers présents dans le iNode du parent
+    DirEntry *dirData = (DirEntry*) data;
+    qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
+    
+    // On ajoute le nom et le iNode
+    strcpy(dirData[qtDir].Filename, filename);
+    dirData[qtDir].iNode = iNodeFilename->iNodeStat.st_ino;
+    
+    // On écrit nos modifications sur le parent
+    WriteBlock(iNodeDestParent->Block[0], data);
+    addiNodeToiNodeBlock(iNodeDestParent);
+    ///////////////////////////////////////////////////////////////////////
+    
+    ///////////// ON VOULAIT EN PLUS MODIFIER LE NOM //////////////////////
+    if(strcmp(filename, newFilename) != 0){
+        // On trouve la quantité de fichiers dans le dossier parent
+        int qtDir = NumberofDirEntry(iNodeDestParent->iNodeStat.st_size);
+        
+        char data[BLOCK_SIZE];
+        ReadBlock(iNodeDestParent->Block[0], data);
+        DirEntry* entries = (DirEntry*) data;
+        
+        // On compacte les entrées des fichiers
+        for(int i = 0; i < qtDir; i++){
+            if(strcmp(entries[i].Filename, filename) == 0){
+                strcpy(entries[i].Filename, newFilename);
+                break;
+            }
+        }
+        
+        // On écrit nos modifications sur le parent
+        WriteBlock(parentInode->Block[0], data);
+    }
+    //////////////////////////////////////////////////////////////////////
+    
+    return 0;
 }
 
 int bd_readdir(const char *pDirLocation, DirEntry **ppListeFichiers) {
