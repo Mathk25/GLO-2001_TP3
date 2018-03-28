@@ -117,18 +117,19 @@ truncate /mauvais.txt 5
 RetVal:-1
 
 truncate /doc 6 
-RetVal:-1
+RetVal:-2
 
 truncate /b.txt 5 
-RetVal:-1
+RetVal:5
 
 read /b.txt 0 10 
-Ce fichier
-RetVal:10
+Ce fi
+RetVal:5
 On doit libérer un bloc de données pour la prochaine opération
 
 truncate /b.txt 0 
-RetVal:-1
+GLOFS: Relache bloc 12
+RetVal:0
 
 
 --------------------------------------------------------------------
@@ -136,10 +137,11 @@ RetVal:-1
 --------------------------------------------------------------------
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 26
+RetVal:26
 
 write /b.txt 1234567890ABCDEFGHIJ1234567890ABCDEFGHIJ 0 
+GLOFS : Saisie bloc 12
 RetVal:40
 
 stat /b.txt 
@@ -337,7 +339,9 @@ Nombre de blocs libres: 26
 RetVal:26
 
 rmdir /rep 
-RetVal:-1
+GLOFS: Relache bloc 8
+GLOFS: Relache i-node 3
+RetVal:0
 
 ls / 
 RetVal:-1
@@ -345,13 +349,13 @@ RetVal:-1
 Doit afficher 27 blocs de libre, car le fichier répertoire a été libéré:
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 27
+RetVal:27
 
 Doit échouer avec -3, car /doc n'est pas vide:.
 
 rmdir /doc 
-RetVal:-1
+RetVal:-3
 
 ls / 
 RetVal:-1
@@ -359,7 +363,7 @@ RetVal:-1
 Doit échouer avec -3, car /doc/tmp n'est pas vide:
 
 rmdir /doc/tmp 
-RetVal:-1
+RetVal:-3
 
 
 --------------------------------------------------------------------
@@ -367,14 +371,14 @@ RetVal:-1
 --------------------------------------------------------------------
 
 create /Doge.wow 
-GLOFS : Saisie i-node 7
+GLOFS : Saisie i-node 3
 RetVal:0
 
 ls / 
 RetVal:-1
 
 create /doc/tmp/new.txt 
-GLOFS : Saisie i-node 8
+GLOFS : Saisie i-node 7
 RetVal:0
 
 ls / 
@@ -409,22 +413,22 @@ RetVal:-1
 --------------------------------------------------------------------
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 27
+RetVal:27
 
 ls /Bonjour 
 RetVal:-1
 
 mkdir /Bonjour/newdir 
-GLOFS : Saisie i-node 26
-GLOFS : Saisie bloc 12
+GLOFS : Saisie i-node 8
+GLOFS : Saisie bloc 8
 RetVal:0
 
-Doit afficher 25 blocs de libre, car le fichier répertoire a utilisé un bloc:
+Doit afficher 26 blocs de libre, car le fichier répertoire a utilisé un bloc:
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 26
+RetVal:26
 
 On vérifie que le nombre de lien nlink pour /Bonjour augmente de 1, à cause du sous-répertoire newdir:
 

@@ -522,11 +522,6 @@ int bd_write(const char *pFilename, const char *buffer, int offset, int numbytes
         return -2;
     }
     
-    // On regarde si le bloc est vide
-    if(iNodeFilename->iNodeStat.st_blocks == 0){
-        return 0;
-    }
-    
     if(offset > iNodeFilename->iNodeStat.st_size){
         return -3;
     }
@@ -683,18 +678,105 @@ int bd_unlink(const char *pFilename) {
     } else {
         addiNodeToiNodeBlock(iNodeFilename);
     }
-    
-    
     return 0;
-    
 }
 
 int bd_truncate(const char *pFilename, int NewSize) {
-	return -1;
+    int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    getInode(iNodeNumFilename, &iNodeFilename);
+    
+    // On regarde si le fichier existe
+    if(iNodeNumFilename == -1)return -1;
+    
+    // On regarde si le fichier est un fichier répertoire
+    if(iNodeFilename->iNodeStat.st_mode & G_IFDIR)return -2;
+    
+    // On vérifie si la nouvelle taille est 0 et qu'on doit simplement relacher le bloc
+    if(NewSize == 0){
+        releaseBlock(iNodeFilename->Block[0]);
+        iNodeFilename->iNodeStat.st_blocks = 0;
+        iNodeFilename->iNodeStat.st_size = 0;
+        addiNodeToiNodeBlock(iNodeFilename);
+        return 0;
+    }
+    
+    if(NewSize < iNodeFilename->iNodeStat.st_size){
+        iNodeFilename->iNodeStat.st_size = NewSize;
+    } else if (NewSize > iNodeFilename->iNodeStat.st_size){
+        if (NewSize > MAX_FILE_SIZE) {
+            NewSize = MAX_FILE_SIZE;
+        }
+        char data[BLOCK_SIZE];
+        ReadBlock(iNodeFilename->Block[0], data);
+        
+        for (int i = iNodeFilename->iNodeStat.st_size; i < NewSize; i++){
+            data[i] = '\0';
+        }
+        WriteBlock(iNodeFilename->Block[0], data);
+    }
+    
+    addiNodeToiNodeBlock(iNodeFilename);
+    return NewSize;
 }
 
 int bd_rmdir(const char *pFilename) {
-	return -1;
+    // On va chercher le inode du pFilename
+    int iNodeNumFilename = getInodeFromPath(pFilename);
+    iNodeEntry* iNodeFilename = alloca(sizeof(*iNodeFilename));
+    getInode(iNodeNumFilename, &iNodeFilename);
+    char filename[FILENAME_SIZE];
+    GetFilenameFromPath(pFilename, filename);
+    
+    // On regarde si le fichier existe
+    if(iNodeNumFilename == -1)return -1;
+    
+    // On regarde si le fichier est bien un répertoire
+    if(iNodeFilename->iNodeStat.st_mode & G_IFREG || !(iNodeFilename->iNodeStat.st_mode & G_IFDIR)){
+        return -2;
+    }
+    
+    // On regarde si la taille du fichier est bien de 2 (donc contient "." et ".."
+    if(iNodeFilename->iNodeStat.st_size > 2*sizeof(DirEntry)){
+        return -3;
+    }
+    
+    // On va chercher le inode du parent
+    char parentPath[4096];
+    GetDirFromPath(pFilename, parentPath);
+    int iNodeNumParent = getInodeFromPath(parentPath);
+    iNodeEntry* parentInode = alloca(sizeof(*parentInode));
+    getInode(iNodeNumParent, &parentInode);
+    
+    char data[BLOCK_SIZE];
+    ReadBlock(parentInode->Block[0], data);
+    DirEntry* entries = (DirEntry*) data;
+    
+    // On décrémente ele nombre de liens du parent
+    parentInode->iNodeStat.st_nlink--;
+    
+    // On trouve la quantité de fichiers dans le dossier parent
+    int qtDir = NumberofDirEntry(parentInode->iNodeStat.st_size);
+    
+    // On compacte les entrées des fichiers
+    for(int i = 0; i < qtDir; i++){
+        if(strcmp(entries[i].Filename, filename) == 0){
+            for (int j = i; j < qtDir - 1; j++) {
+                entries[j] = entries[j+1];
+            }
+            break;
+        }
+    }
+    
+    // On écrit nos modifications sur le parent
+    WriteBlock(parentInode->Block[0], data);
+    addiNodeToiNodeBlock(parentInode);
+    
+    // On relâche le bloc et le inode associé au répertoire qu'on vient de supprimer
+    releaseBlock(iNodeFilename->Block[0]);
+    releaseInode(iNodeNumFilename);
+    
+    return 0;
 }
 
 int bd_rename(const char *pFilename, const char *pDestFilename) {
