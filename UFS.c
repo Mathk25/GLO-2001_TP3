@@ -475,8 +475,8 @@ int bd_mkdir(const char *pDirName) {
     int numEntry = 0;
     
     // On met le numéro d'inode de pPathExistant dans l'entrée du dossier parent lié au fichier hardlinké
-    entries[numEntry++].iNode = reservediNodeNum;
-    strcpy(entries[numEntry].Filename, ".");
+    entries[numEntry].iNode = reservediNodeNum;
+    strcpy(entries[numEntry++].Filename, ".");
     
     entries[numEntry].iNode = parentiNodeNum;
     strcpy(entries[numEntry].Filename, "..");
