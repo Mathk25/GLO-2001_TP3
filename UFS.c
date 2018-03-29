@@ -988,7 +988,6 @@ int bd_symlink(const char *pPathExistant, const char *pPathNouveauLien) {
     
     bd_create(pPathNouveauLien);
 
-
     getInode(getInodeFromPath(pPathNouveauLien), &iNodePathNouveauLien);
     iNodePathNouveauLien->iNodeStat.st_mode |= G_IFLNK;
     addiNodeToiNodeBlock(iNodePathNouveauLien);
