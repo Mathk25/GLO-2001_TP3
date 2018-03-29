@@ -972,11 +972,11 @@ int bd_symlink(const char *pPathExistant, const char *pPathNouveauLien) {
     if(iNodeNumPathNouveauLien != -1)return -2;
     
     bd_create(pPathNouveauLien);
+
+
+    getInode(getInodeFromPath(pPathNouveauLien), &iNodePathNouveauLien);
     iNodePathNouveauLien->iNodeStat.st_mode |= G_IFLNK;
-    iNodePathNouveauLien->iNodeStat.st_mode |= G_IFREG;
-    
     addiNodeToiNodeBlock(iNodePathNouveauLien);
-    
     bd_write(pPathNouveauLien, pPathExistant, 0, (int)strlen(pPathExistant));
     
     return 0;

@@ -83,7 +83,7 @@ ls /
  -rwxrwx          b.txt size:      29 inode:  7 nlink: 1 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:9
 
 
@@ -316,7 +316,7 @@ ls /
  -rwxrwx          b.txt size:      50 inode:  7 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 2 
 RetVal:10
 
@@ -336,7 +336,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 1 
 RetVal:9
 
@@ -359,7 +359,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:8
 
 Doit afficher 25 blocs de libre, car l'inode a été libéré:
@@ -413,7 +413,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:7
 
 Doit afficher 26 blocs de libre, car le fichier répertoire a été libéré:
@@ -434,7 +434,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:7
 
 Doit échouer avec -3, car /doc/tmp n'est pas vide:
@@ -458,7 +458,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
 RetVal:8
 
@@ -473,7 +473,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
 RetVal:8
 
@@ -513,7 +513,7 @@ ls /
  drwxrwx        Bonjour size:      32 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
@@ -558,7 +558,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 3 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
@@ -592,7 +592,7 @@ ls /
  drwxrwx        Bonjour size:      64 inode:  4 nlink: 4 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+ lrwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
