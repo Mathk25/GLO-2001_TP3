@@ -977,11 +977,7 @@ int bd_symlink(const char *pPathExistant, const char *pPathNouveauLien) {
     
     addiNodeToiNodeBlock(iNodePathNouveauLien);
     
-    char data[strlen(pPathExistant)];
-    strcpy(data, pPathExistant);
-    memmove(data, data+1, strlen(data));
-    
-    bd_write(pPathNouveauLien, data, 0, (int)strlen(data)+1);
+    bd_write(pPathNouveauLien, pPathExistant, 0, (int)strlen(pPathExistant));
     
     return 0;
 }
