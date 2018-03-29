@@ -1,10 +1,6 @@
 # TP3
 Pain is huge, OS is hard
 
-## Authors
-* Olivier Gamache
-* Édouard Carré
-
 ### How to run on linux
 ```
 mkdir /tmp/glo
@@ -14,3 +10,10 @@ make glofs
 ./glofs /tmp/glo -f -ouse_ino
 ```
 
+## Authors
+* Olivier Gamache
+* Édouard Carré
+
+## Thanks to
+* François Pomerleau
+* Philippe Giguère
