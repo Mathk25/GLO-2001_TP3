@@ -83,6 +83,7 @@ void printiNode(iNodeEntry iNode) {
 /* ----------------------------------------------------------------------------------------
 					            à vous de jouer, maintenant!
    ---------------------------------------------------------------------------------------- */
+// Choisir un inode dans la bitmap
 static int getFirstFreeInode(){
     char data[BLOCK_SIZE];
     int errReadBlock;
@@ -103,6 +104,7 @@ static int getFirstFreeInode(){
     return -1;
 }
 
+// Choisir un bloc dans la bitmap
 static int getFirstFreeBlock(){
     char data[BLOCK_SIZE];
     int errReadBlock;
@@ -123,6 +125,7 @@ static int getFirstFreeBlock(){
     return -1;
 }
 
+// Écrire l'inode dans le bloc des inodes
 static int addiNodeToiNodeBlock(iNodeEntry *iNode){
     char data[BLOCK_SIZE];
     
@@ -147,8 +150,6 @@ static int addiNodeToiNodeBlock(iNodeEntry *iNode){
     
     return 0;
 }
-
-
 
 // Copie un inode dans entry selon un numéro d'inode
 static int getInode(int inodeNumber, iNodeEntry **entry){
@@ -177,6 +178,7 @@ static int getInode(int inodeNumber, iNodeEntry **entry){
     return 0;
 }
 
+// Enlever l'inode de la bitmap
 static int releaseInode(int numInode){
     char data[BLOCK_SIZE];
     ReadBlock(FREE_INODE_BITMAP, data);
@@ -202,6 +204,7 @@ static int releaseInode(int numInode){
     return 0;
 }
 
+// Enlever le bloc de la bitmap
 static int releaseBlock(int numBlock){
     char data[BLOCK_SIZE];
     ReadBlock(FREE_BLOCK_BITMAP, data);
@@ -281,6 +284,7 @@ static int getInodeFromPath(const char *path){
      
 }
 
+// ------------------------------------------------------------------------
 
 int bd_countfreeblocks(void) {
     int nbrFreeBlock = 0;
