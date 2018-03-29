@@ -294,6 +294,7 @@ int bd_countfreeblocks(void) {
     // On assigne une valeur de retour à la fonction ReadBLock
     errReadBlock = ReadBlock(FREE_BLOCK_BITMAP, data);
 
+    // On vérifie la valeur du ReadBlock
     if (errReadBlock == 0 || errReadBlock == -1){
         return errReadBlock;
     }
@@ -310,11 +311,14 @@ int bd_countfreeblocks(void) {
 int bd_stat(const char *pFilename, gstat *pStat) {
     int inodeNum = getInodeFromPath(pFilename);
     
+    // On regarde si l'iNode existe
     if (inodeNum == -1) return -1;
     
+    // On va chercher l'iNode
     iNodeEntry* inode = alloca(sizeof(*inode));
     getInode(inodeNum, &inode);
     
+    // On écrit les valeurs dans pStat
     pStat->st_blocks = inode->iNodeStat.st_blocks;
     pStat->st_ino = inode->iNodeStat.st_ino;
     pStat->st_mode = inode->iNodeStat.st_mode;
@@ -418,6 +422,7 @@ int bd_read(const char *pFilename, char *buffer, int offset, int numbytes) {
     
     int i = 0;
     
+    // On lit le contenu des données et on l'écrit dans le buffer
     while (i < numbytes && offset < iNodeFilename->iNodeStat.st_size){
         buffer[i] = data[offset];
         i++;
@@ -457,6 +462,7 @@ int bd_mkdir(const char *pDirName) {
     
     getInode(reservediNodeNum, &newiNode);
     
+    // On met les bonnes valeurs dans l'iNode
     newiNode->iNodeStat.st_mode = 0;
     newiNode->iNodeStat.st_mode |= G_IFDIR;
     newiNode->iNodeStat.st_mode |= G_IRWXG;
@@ -551,7 +557,7 @@ int bd_write(const char *pFilename, const char *buffer, int offset, int numbytes
     
     int i = 0;
     
-    
+    // On fait la lecture des données dans le fichier
     while (i < numbytes && iNodeFilename->iNodeStat.st_size < MAX_FILE_SIZE){
         data[offset] = buffer[i];
         i++;
@@ -561,6 +567,7 @@ int bd_write(const char *pFilename, const char *buffer, int offset, int numbytes
         }
     }
     
+    // On écrit l'iNode et le bloc
     addiNodeToiNodeBlock(iNodeFilename);
     WriteBlock(iNodeFilename->Block[0], data);
     return i;
@@ -713,6 +720,7 @@ int bd_truncate(const char *pFilename, int NewSize) {
         return 0;
     }
     
+    // On ajuste tout de suite le size de l'iNode pour savoir combien de '\0' on va devoir mettre
     if(NewSize < iNodeFilename->iNodeStat.st_size){
         iNodeFilename->iNodeStat.st_size = NewSize;
     } else if (NewSize > iNodeFilename->iNodeStat.st_size){
@@ -722,12 +730,15 @@ int bd_truncate(const char *pFilename, int NewSize) {
         char data[BLOCK_SIZE];
         ReadBlock(iNodeFilename->Block[0], data);
         
+        // On ajoute les '\0' dans le fichier
         for (int i = iNodeFilename->iNodeStat.st_size; i < NewSize; i++){
             data[i] = '\0';
         }
+        // On écrit le bloc
         WriteBlock(iNodeFilename->Block[0], data);
     }
     
+    // On écrit l'iNode
     addiNodeToiNodeBlock(iNodeFilename);
     return NewSize;
 }
