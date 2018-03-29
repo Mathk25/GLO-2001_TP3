@@ -1,9 +1,9 @@
 # TP3
 Pain is huge, OS is hard
 
-##Authors
-*Olivier Gamache
-*Édouard Carré
+## Authors
+* Olivier Gamache
+* Édouard Carré
 
 How to run on linux
 ```
