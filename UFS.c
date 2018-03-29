@@ -94,7 +94,7 @@ static int getFirstFreeInode(){
     // On itère sur le bitmap d'iNodes, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
     for (int i = ROOT_INODE; i < N_INODE_ON_DISK; i++){
         if (data[i] != 0){
-            printf("GLOFS : Saisie i-node %d\n", i);
+            printf("GLOFS: Saisie i-node %d\n", i);
             data[i] = 0;
             WriteBlock(FREE_INODE_BITMAP, data);
             return i;
@@ -114,7 +114,7 @@ static int getFirstFreeBlock(){
     // On itère sur le bitmap de blocs, et quand on en trouve un de libre, on inscrit sa valeur à 0 dans le bitmap et on inscrit le bloc
     for (int i = 0; i < N_BLOCK_ON_DISK; i++){
         if (data[i] != 0){
-            printf("GLOFS : Saisie bloc %d\n", i);
+            printf("GLOFS: Saisie bloc %d\n", i);
             data[i] = 0;
             WriteBlock(FREE_BLOCK_BITMAP, data);
             return i;
@@ -353,10 +353,10 @@ int bd_create(const char *pFilename) {
     getInode(freeInodeNumber, &iNode);
     
     // Initialisation du iNode selon les params voulus
+    iNode->iNodeStat.st_mode = 0;
     iNode->iNodeStat.st_mode |= G_IFREG;
     iNode->iNodeStat.st_mode |= G_IRWXG;
     iNode->iNodeStat.st_mode |= G_IRWXU;
-    iNode->iNodeStat.st_mode &= ~G_IFDIR;
     iNode->iNodeStat.st_size = 0;
     iNode->iNodeStat.st_blocks = 0;
     iNode->iNodeStat.st_nlink = 1;
@@ -453,6 +453,7 @@ int bd_mkdir(const char *pDirName) {
     
     getInode(reservediNodeNum, &newiNode);
     
+    newiNode->iNodeStat.st_mode = 0;
     newiNode->iNodeStat.st_mode |= G_IFDIR;
     newiNode->iNodeStat.st_mode |= G_IRWXG;
     newiNode->iNodeStat.st_mode |= G_IRWXU;
@@ -907,8 +908,8 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
             char data[BLOCK_SIZE];
             ReadBlock(iNodeDestParent->Block[0], data);
             DirEntry* entries = (DirEntry*) data;
-
-            // On compacte les entrées des fichiers
+            
+            // On trouve le nom et on le modifie
             for(int i = 0; i < qtDir; i++){
                 if(strcmp(entries[i].Filename, filename) == 0){
                     strcpy(entries[i].Filename, newFilename);
@@ -917,7 +918,7 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
             }
 
             // On écrit nos modifications sur le parent
-            WriteBlock(parentInode->Block[0], data);
+            WriteBlock(iNodeDestParent->Block[0], data);
         }
         //////////////////////////////////////////////////////////////////////
     }
@@ -968,20 +969,35 @@ int bd_symlink(const char *pPathExistant, const char *pPathNouveauLien) {
     if(iNodeNumParentPathNouveauLien == -1)return -1;
     
     // On regarde si le fichier existe déjà
-    if(iNodeNumPathNouveauLien != -1){
-        return -2;
-    }
+    if(iNodeNumPathNouveauLien != -1)return -2;
     
     bd_create(pPathNouveauLien);
     iNodePathNouveauLien->iNodeStat.st_mode |= G_IFLNK;
+    iNodePathNouveauLien->iNodeStat.st_mode |= G_IFREG;
     
     addiNodeToiNodeBlock(iNodePathNouveauLien);
     
-    bd_write(pPathNouveauLien, pPathExistant, 0, (int)strlen(pPathExistant)-1);
+    char data[strlen(pPathExistant)];
+    strcpy(data, pPathExistant);
+    memmove(data, data+1, strlen(data));
+    
+    bd_write(pPathNouveauLien, data, 0, (int)strlen(data)+1);
+    
     return 0;
 }
 
 int bd_readlink(const char *pPathLien, char *pBuffer, int sizeBuffer) {
-    return -1;
+    int iNodeNumPathLien = getInodeFromPath(pPathLien);
+    iNodeEntry* iNodePathLien = alloca(sizeof(*iNodePathLien));
+    getInode(iNodeNumPathLien, &iNodePathLien);
+    
+    if(iNodeNumPathLien == -1)return -1;
+    if(!(iNodePathLien->iNodeStat.st_mode & G_IFREG && iNodePathLien->iNodeStat.st_mode & G_IFLNK))return -2;
+    
+    bd_read(pPathLien, pBuffer, 0, sizeBuffer);
+    
+    pBuffer[sizeBuffer] = '\0';
+    
+    return (int)strlen(pBuffer);
 }
 

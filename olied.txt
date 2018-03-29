@@ -57,31 +57,34 @@ RetVal:25
 Doit réussir:
 
 symlink /b.txt /symlinkb.txt 
-RetVal:-1
+GLOFS: Saisie i-node 26
+GLOFS: Saisie bloc 15
+RetVal:0
 
 Doit échouer avec -2, car symlinkb.txt existe déjà:
 
 symlink /b.txt /symlinkb.txt 
-RetVal:-1
+RetVal:-2
 
 Doit afficher 24 blocs de libre:
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 Doit afficher des numéros d'i-node différents pour /b.txt et /symlinkb.txt:
 
 ls / 
- drwxrwx              . size:     128 inode:  1 nlink: 6 
- drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx              . size:     144 inode:  1 nlink: 6 
+ drwxrwx             .. size:     144 inode:  1 nlink: 6 
  drwxrwx            doc size:      48 inode:  2 nlink: 3 
  drwxrwx            rep size:      32 inode:  3 nlink: 2 
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  -rwxrwx          b.txt size:      29 inode:  7 nlink: 1 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
-RetVal:8
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+RetVal:9
 
 
 --------------------------------------------------------------------
@@ -89,7 +92,8 @@ RetVal:8
 --------------------------------------------------------------------
 
 readlink /slnb.txt 
-RetVal:-1
+Le lien symbolique pointe vers b.txt
+RetVal:5
 
 Doit échouer avec -1, car hlnb.txt n'est pas un lien symbolique:
 
@@ -167,11 +171,11 @@ RetVal:0
 --------------------------------------------------------------------
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 25
+RetVal:25
 
 write /b.txt 1234567890ABCDEFGHIJ1234567890ABCDEFGHIJ 0 
-GLOFS : Saisie bloc 12
+GLOFS: Saisie bloc 12
 RetVal:40
 
 stat /b.txt 
@@ -179,8 +183,8 @@ inode:7 size:40 blocks:1 nlink:1
 RetVal:0
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 
 --------------------------------------------------------------------
@@ -220,8 +224,8 @@ inode:7 size:40 blocks:1 nlink:1
 RetVal:0
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 read /b.txt 0 20 
 1234567890ABCD-FGHIJ
@@ -268,8 +272,8 @@ inode:7 size:50 blocks:1 nlink:1
 RetVal:0
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 read /b.txt 0 60 
 1234567890ABCD-FGHIJ1234567890ABCDEFGHIJabcdefghij
@@ -282,44 +286,39 @@ RetVal:50
 Le nombre de blocs libre ne doit pas changer
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 Doit réussir:
 
 hardlink /b.txt /hlnb.txt 
-pPathExistant (1er arg HL): /b.txt
-pPathNouveauLien (2e): /hlnb.txt
-7 1
 RetVal:0
 
 Doit échouer avec -2, car hlnb.txt existe déjà:
 
 hardlink /b.txt /hlnb.txt 
-pPathExistant (1er arg HL): /b.txt
-pPathNouveauLien (2e): /hlnb.txt
-7 1
 RetVal:-2
 
-Doit afficher 25 blocs de libre:
+Doit afficher 24 blocs de libre:
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 Doit afficher les mêmes numéros d'i-node pour /b.txt et /hlnb.txt:
 
 ls / 
- drwxrwx              . size:     144 inode:  1 nlink: 6 
- drwxrwx             .. size:     144 inode:  1 nlink: 6 
+ drwxrwx              . size:     160 inode:  1 nlink: 6 
+ drwxrwx             .. size:     160 inode:  1 nlink: 6 
  drwxrwx            doc size:      48 inode:  2 nlink: 3 
  drwxrwx            rep size:      32 inode:  3 nlink: 2 
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  -rwxrwx          b.txt size:      50 inode:  7 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 2 
-RetVal:9
+RetVal:10
 
 
 --------------------------------------------------------------------
@@ -330,21 +329,22 @@ unlink /b.txt
 RetVal:0
 
 ls / 
- drwxrwx              . size:     128 inode:  1 nlink: 6 
- drwxrwx             .. size:     128 inode:  1 nlink: 6 
+ drwxrwx              . size:     144 inode:  1 nlink: 6 
+ drwxrwx             .. size:     144 inode:  1 nlink: 6 
  drwxrwx            doc size:      48 inode:  2 nlink: 3 
  drwxrwx            rep size:      32 inode:  3 nlink: 2 
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       hlnb.txt size:      50 inode:  7 nlink: 1 
-RetVal:8
+RetVal:9
 
-Doit afficher 25 blocs de libre, car l'inode est toujours détenu par hlnb.txt:
+Doit afficher 24 blocs de libre, car l'inode est toujours détenu par hlnb.txt:
 
 blockfree 
-Nombre de blocs libres: 25
-RetVal:25
+Nombre de blocs libres: 24
+RetVal:24
 
 unlink /hlnb.txt 
 GLOFS: Relache bloc 12
@@ -352,20 +352,21 @@ GLOFS: Relache i-node 7
 RetVal:0
 
 ls / 
- drwxrwx              . size:     112 inode:  1 nlink: 6 
- drwxrwx             .. size:     112 inode:  1 nlink: 6 
+ drwxrwx              . size:     128 inode:  1 nlink: 6 
+ drwxrwx             .. size:     128 inode:  1 nlink: 6 
  drwxrwx            doc size:      48 inode:  2 nlink: 3 
  drwxrwx            rep size:      32 inode:  3 nlink: 2 
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
-RetVal:7
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
+RetVal:8
 
-Doit afficher 26 blocs de libre, car l'inode a été libéré:
+Doit afficher 25 blocs de libre, car l'inode a été libéré:
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 25
+RetVal:25
 
 Doit échouer avec -1, car /b.txt n'existe plus:
 
@@ -397,8 +398,8 @@ RetVal:-2
 --------------------------------------------------------------------
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 25
+RetVal:25
 
 rmdir /rep 
 GLOFS: Relache bloc 8
@@ -412,14 +413,14 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:7
 
-Doit afficher 27 blocs de libre, car le fichier répertoire a été libéré:
+Doit afficher 26 blocs de libre, car le fichier répertoire a été libéré:
 
 blockfree 
-Nombre de blocs libres: 27
-RetVal:27
+Nombre de blocs libres: 26
+RetVal:26
 
 Doit échouer avec -3, car /doc n'est pas vide:.
 
@@ -433,7 +434,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
 RetVal:7
 
 Doit échouer avec -3, car /doc/tmp n'est pas vide:
@@ -447,7 +448,7 @@ RetVal:-3
 --------------------------------------------------------------------
 
 create /Doge.wow 
-GLOFS : Saisie i-node 3
+GLOFS: Saisie i-node 3
 RetVal:0
 
 ls / 
@@ -457,12 +458,12 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
 RetVal:8
 
 create /doc/tmp/new.txt 
-GLOFS : Saisie i-node 7
+GLOFS: Saisie i-node 7
 RetVal:0
 
 ls / 
@@ -472,7 +473,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
 RetVal:8
 
@@ -498,11 +499,7 @@ ls /Bonjour
 RetVal:3
 
 rename /Bonjour/OncleG.txt /DansRoot.txt 
-pFilenamet: /Bonjour/OncleG.txt //// pDestFilename:/DansRoot.txt
-pPathExistant (1er arg HL): /Bonjour/OncleG.txt
-pPathNouveauLien (2e): /DansRoot.txt
-9 1
-0RetVal:0
+RetVal:0
 
 ls /Bonjour 
  drwxrwx              . size:      32 inode:  4 nlink: 2 
@@ -516,7 +513,7 @@ ls /
  drwxrwx        Bonjour size:      32 inode:  4 nlink: 2 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
@@ -527,8 +524,8 @@ RetVal:9
 --------------------------------------------------------------------
 
 blockfree 
-Nombre de blocs libres: 27
-RetVal:27
+Nombre de blocs libres: 26
+RetVal:26
 
 ls /Bonjour 
  drwxrwx              . size:      32 inode:  4 nlink: 2 
@@ -536,22 +533,22 @@ ls /Bonjour
 RetVal:2
 
 mkdir /Bonjour/newdir 
-GLOFS : Saisie i-node 8
-GLOFS : Saisie bloc 8
+GLOFS: Saisie i-node 8
+GLOFS: Saisie bloc 8
 RetVal:0
 
-Doit afficher 26 blocs de libre, car le fichier répertoire a utilisé un bloc:
+Doit afficher 25 blocs de libre, car le fichier répertoire a utilisé un bloc:
 
 blockfree 
-Nombre de blocs libres: 26
-RetVal:26
+Nombre de blocs libres: 25
+RetVal:25
 
 On vérifie que le nombre de lien nlink pour /Bonjour augmente de 1, à cause du sous-répertoire newdir:
 
 ls /Bonjour 
  drwxrwx              . size:      48 inode:  4 nlink: 3 
  drwxrwx             .. size:     144 inode:  1 nlink: 5 
- d------         newdir size:      32 inode:  8 nlink: 2 
+ drwxrwx         newdir size:      32 inode:  8 nlink: 2 
 RetVal:3
 
 ls / 
@@ -561,7 +558,7 @@ ls /
  drwxrwx        Bonjour size:      48 inode:  4 nlink: 3 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
@@ -574,7 +571,7 @@ RetVal:9
 ls /Bonjour 
  drwxrwx              . size:      48 inode:  4 nlink: 3 
  drwxrwx             .. size:     144 inode:  1 nlink: 5 
- d------         newdir size:      32 inode:  8 nlink: 2 
+ drwxrwx         newdir size:      32 inode:  8 nlink: 2 
 RetVal:3
 
 ls /doc 
@@ -595,7 +592,7 @@ ls /
  drwxrwx        Bonjour size:      64 inode:  4 nlink: 4 
  lrwxrwx       slnb.txt size:       5 inode: 10 nlink: 1 
  drwxrwx           full size:     256 inode: 11 nlink: 2 
- drwxrwx           full size:     256 inode: 11 nlink: 2 
+ -rwxrwx   symlinkb.txt size:       6 inode: 26 nlink: 1 
  -rwxrwx       Doge.wow size:       0 inode:  3 nlink: 1 
  -rwxrwx   DansRoot.txt size:       0 inode:  9 nlink: 1 
 RetVal:9
@@ -603,21 +600,25 @@ RetVal:9
 On vérifie que le sous-réperoire tmpmv contient encore subtmp et new.txt:
 
 ls /Bonjour/tmpmv 
-RetVal:-1
+ drwxrwx              . size:      64 inode:  5 nlink: 3 
+ drwxrwx             .. size:      64 inode:  4 nlink: 4 
+ drwxrwx         subtmp size:      32 inode:  6 nlink: 2 
+ -rwxrwx        new.txt size:       0 inode:  7 nlink: 1 
+RetVal:4
 
 On vérifie que le nombre de lien vers ce même répertoire n'augmente pas si on répète l'opération:
 
 rename /Bonjour/tmpmv /Bonjour/tmpmv2 
-RetVal:-1
+RetVal:0
 
 rename /Bonjour/tmpmv2 /Bonjour/tmpmv3 
-RetVal:-1
+RetVal:0
 
 ls /Bonjour 
  drwxrwx              . size:      64 inode:  4 nlink: 4 
  drwxrwx             .. size:     144 inode:  1 nlink: 5 
- d------         newdir size:      32 inode:  8 nlink: 2 
- -rwxrwx            � size:       0 inode:  7 nlink: 1 
+ drwxrwx         newdir size:      32 inode:  8 nlink: 2 
+ drwxrwx         tmpmv3 size:      64 inode:  5 nlink: 3 
 RetVal:4
 
 
@@ -667,9 +668,6 @@ ls /full
 RetVal:16
 
 hardlink /full/10.txt /full/30.txt 
-pPathExistant (1er arg HL): /full/10.txt
-pPathNouveauLien (2e): /full/30.txt
-22 11
 RetVal:-4
 
 ls /full 
