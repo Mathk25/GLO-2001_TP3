@@ -321,7 +321,7 @@ int bd_stat(const char *pFilename, gstat *pStat) {
 }
 
 int bd_create(const char *pFilename) {
-    char parentFilename[4096];
+    char parentFilename[strlen(pFilename)];
     char trunkatedFilename[FILENAME_SIZE];
     GetDirFromPath(pFilename, parentFilename);
     
@@ -643,7 +643,7 @@ int bd_unlink(const char *pFilename) {
     if(!(iNodeFilename->iNodeStat.st_mode & G_IFREG))return -2;
     
     
-    char parentDir[4096];
+    char parentDir[strlen(pFilename)];
     GetDirFromPath(pFilename, parentDir);
     int iNodeNumParent = getInodeFromPath(parentDir);
     
