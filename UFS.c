@@ -805,6 +805,7 @@ int bd_rmdir(const char *pFilename) {
 }
 
 int bd_rename(const char *pFilename, const char *pDestFilename) {
+    // On trouve le parent et le filename ainsi que leurs inodes
     char parentPath[strlen(pFilename)];
     GetDirFromPath(pFilename, parentPath);
     int iNodeNumFilename = getInodeFromPath(pFilename);
@@ -812,13 +813,15 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
     getInode(iNodeNumFilename, &iNodeFilename);
     char filename[FILENAME_SIZE];
     GetFilenameFromPath(pFilename, filename);
-    
+
+    // On trouve l'inode du directory du parent
     char DestFilename[strlen(pDestFilename)];
     GetDirFromPath(pDestFilename, DestFilename);
     int iNodeNumDestParent = getInodeFromPath(DestFilename);
     iNodeEntry* iNodeDestParent = alloca(sizeof(*iNodeDestParent));
     getInode(iNodeNumDestParent, &iNodeDestParent);
-    
+
+    // On trouve le nom du filename
     char newFilename[strlen(pDestFilename)];
     GetFilenameFromPath(pDestFilename, newFilename);
     
@@ -838,7 +841,7 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
         ReadBlock(parentInode->Block[0], data);
         DirEntry* entries = (DirEntry*) data;
         
-        // On compacte les entrées des fichiers
+        // On change le nom pour le bom
         for(int i = 0; i < qtDir; i++){
             if(strcmp(entries[i].Filename, filename) == 0){
                 strcpy(entries[i].Filename, newFilename);
@@ -856,7 +859,11 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
     if(iNodeDestParent->iNodeStat.st_size >= BLOCK_SIZE){
         return -4;
     }
-    
+
+    /////////// LES PROCHAINES LIGNES DEVRAIENT ÊTRE MISES ////////////////
+    /////////// DANS DES FONCTIONS POUR CLEAN CODE ET      ////////////////
+    /////////// RÉUTILISATION DE CODE <3                   ////////////////
+
     //////////////// DANS LE CAS D'UN DIRECTORY            ////////////////
     //////////////// SUPPRIMER DU FICHIER PARENT DE DÉPART ////////////////
     
@@ -895,8 +902,6 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
         ReadBlock(iNodeDestParent->Block[0], data);
 
         iNodeDestParent->iNodeStat.st_nlink++;
-
-        // On regarde la quantité de fichiers présents dans le iNode du parent
         
 
         // On ajoute le nom et le iNode
@@ -939,6 +944,7 @@ int bd_rename(const char *pFilename, const char *pDestFilename) {
     }
     //////////////////// DÉPLACER UN FICHIER /////////////////////////////
     if (iNodeFilename->iNodeStat.st_mode & G_IFREG) {
+        // On crée un hardlink dans la destination et retire le fichier de départ
         bd_hardlink(pFilename, pDestFilename);
         bd_unlink(pFilename);
     }
