@@ -5,7 +5,7 @@ Pain is huge, OS is hard
 * Olivier Gamache
 * Édouard Carré
 
-How to run on linux
+### How to run on linux
 ```
 mkdir /tmp/glo
 make clean
