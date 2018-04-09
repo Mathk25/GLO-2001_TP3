@@ -1,0 +1,11 @@
+getattr(/) appelé.
+getattr(/) appelé.
+readdir(/) appelé.
+getattr(/doc) appelé.
+getattr(/rep) appelé.
+getattr(/Bonjour) appelé.
+getattr(/b.txt) appelé.
+getattr(/slnb.txt) appelé.
+readlink(/slnb.txt,0x7fd06a273cf0,4097) appelé.
+getattr(/full) appelé.
+getattr(/) appelé.
