@@ -7,6 +7,7 @@ mkdir /tmp/glo
 make clean
 make ufs
 make glofs
+mkdir /tmp/glo
 ./glofs /tmp/glo -f -ouse_ino
 ```
 
