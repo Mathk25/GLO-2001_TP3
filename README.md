@@ -1,6 +1,9 @@
 # TP3
 File system for UNIX
 
+## Requirements
+* [libfuse-dev](https://packages.debian.org/sid/libfuse-dev)
+
 ### How to run on linux
 ```
 mkdir /tmp/glo
